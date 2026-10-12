@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HMWK 1 – From Private Key to Public Key (Toy Elliptic Curve)</title>
+<style>
+:root{--bg:#f6f7fb;--fg:#1b2030;--mut:#5d667a;--card:#fff;--ac:#3d5afe;--ac2:#7c4dff;--hi:#e8472b;--ln:#e2e6ef;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131b;--fg:#e8ebf3;--mut:#9aa3b8;--card:#1a1f2c;--ac:#8099ff;--ac2:#b39dff;--hi:#ff7a63;--ln:#2f3648}}
+:root[data-theme="dark"]{--bg:#10131b;--fg:#e8ebf3;--mut:#9aa3b8;--card:#1a1f2c;--ac:#8099ff;--ac2:#b39dff;--hi:#ff7a63;--ln:#2f3648}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:0 16px 40px}
+main{max-width:940px;margin:0 auto}
+header{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border-radius:0 0 18px 18px;padding:28px 20px;margin:0 -16px 18px}
+header>div{max-width:940px;margin:0 auto}header h1{margin:0 0 6px;font-size:1.7rem}header p{margin:0;opacity:.92}
+h2{font-size:1.2rem;margin:30px 0 8px;display:flex;align-items:center;gap:10px}
+h2 .n{background:var(--ac);color:#fff;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;flex:none}
+h3{font-size:1.02rem;margin:0 0 4px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px 16px;margin:10px 0;box-shadow:0 1px 3px rgba(20,30,60,.06)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.steps .card{margin:0}.steps b{color:var(--ac)}
+.mut{color:var(--mut);font-size:.92rem}.wrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:.92rem;width:100%}th{color:var(--mut);font-weight:600}th,td{border-bottom:1px solid var(--ln);padding:6px 10px;text-align:left}
+.nw td,.nw th{white-space:nowrap}
+tr.sel{background:color-mix(in srgb,var(--hi) 15%,transparent)}
+button,select,input{font:inherit;padding:7px 12px;border-radius:9px;border:1px solid var(--ln);background:var(--card);color:var(--fg)}
+button{background:var(--ac);color:#fff;border:0;cursor:pointer;font-weight:600}button.sec{background:var(--card);color:var(--fg);border:1px solid var(--ln)}
+code{background:color-mix(in srgb,var(--ac) 12%,transparent);padding:1px 6px;border-radius:5px}
+.bars{display:flex;align-items:flex-end;gap:2px;height:90px;margin:4px 0 8px}
+.bars div{flex:1;background:linear-gradient(var(--ac2),var(--ac));min-width:3px;border-radius:3px 3px 0 0}
+.bits{display:flex;gap:4px;height:80px;position:relative;margin:6px 0 24px}
+.bits::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1.5px dashed var(--hi)}
+.bits .b{flex:1;position:relative;display:flex;align-items:flex-end}.bits .fill{width:100%;background:linear-gradient(var(--ac2),var(--ac));border-radius:3px 3px 0 0}
+.bits span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:.72rem;color:var(--mut)}
+.chip{display:inline-block;background:color-mix(in srgb,var(--ac) 12%,transparent);border-radius:999px;padding:1px 9px;margin:2px;font-size:.82rem}
+svg{max-width:100%;height:auto;background:var(--card);border:1px solid var(--ln);border-radius:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.big{display:inline-block;font-size:1.3rem;font-weight:700;color:var(--hi);margin:6px 0}
+details{margin:8px 0}summary{cursor:pointer;font-weight:600;color:var(--ac)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}.grid2 .card{margin:0}
+.arrow{text-align:center;margin:14px 0;padding:10px 16px;border:2px dashed var(--ac);border-radius:14px}.arrow .a{font-size:2rem;color:var(--ac);line-height:1}
+.gauge{position:relative;height:12px;background:var(--ln);border-radius:6px;margin:4px 0 10px}.gf{height:100%;background:var(--ac);border-radius:6px}.gl{position:absolute;left:50%;top:-3px;bottom:-3px;border-left:2px dashed var(--hi)}
+</style></head><body>
+<header><div><h1>🔑 From Private Key to Public Key</h1>
+<p>A toy elliptic-curve demo: <code style="background:rgba(255,255,255,.2)">Q = k·G</code> on <code style="background:rgba(255,255,255,.2)">y² = x³ + 7 (mod 17)</code>. Ethereum uses the same kind of curve (secp256k1), with a 256-bit p.</p></div></header>
+<main>
+<div class="steps">
+<div class="card"><b>1. Pick a secret number k</b><br>The private key, e.g. k = 6.</div>
+<div class="card"><b>2. Hop k times from G</b><br>Each hop applies the point-addition rule on the curve.</div>
+<div class="card"><b>3. Landing point = public key</b><br>Easy to compute forward, very hard to reverse (ECDLP).</div></div>
+<div class="card"><h3>What is this about?</h3>
+<div class="grid2" style="margin:6px 0 10px">
+<div><b>Private key</b>: a secret number k. Whoever knows it can sign transactions, that is, prove the account is theirs.</div>
+<div><b>Public key</b>: a point Q computed from k (Q = k·G). It can be shared: others use it to check signatures, but cannot get k back from it.</div></div>
+<p style="margin:0"><b>Purpose of this exercise:</b> compute Q = k·G on a tiny curve (point addition, then the double-and-add shortcut), watch it step by step, and test statistically whether the results look random. The goal is to see why this is a <i>one-way function</i> and how it differs from a <i>hash function</i>.</p></div>
+
+<div class="card">
+<p class="mut" id="info" style="margin-top:0"></p>
+<div class="row"><label>Private key k (1…8): <input id="k" type="number" min="1" max="8" value="6" style="width:80px"></label><button id="go">Compute</button></div>
+<div id="res"></div>
+<details><summary>Show the formulas (all arithmetic is mod p)</summary>
+<p><b>Addition</b> P ≠ Q: <code>λ = (y₂ − y₁)/(x₂ − x₁)</code>, <code>x₃ = λ² − x₁ − x₂</code>, <code>y₃ = λ(x₁ − x₃) − y₁</code><br>
+<b>Doubling</b> P + P: <code>λ = 3x₁²/(2y₁)</code>, <code>x₃ = λ² − 2x₁</code>, <code>y₃ = λ(x₁ − x₃) − y₁</code><br>
+<span class="mut">λ is the slope of the line through the two points (the tangent when doubling). "Dividing" mod p means multiplying by the modular inverse.</span></p></details></div>
+
+<h2><span class="n">1</span>Slow method: G, 2G, 3G, …, kG</h2>
+<div class="card wrap"><table id="tab" class="nw"></table></div>
+<div class="arrow"><div class="a">⬇</div><b>Too slow for big keys.</b> This table needs k additions. A real k has 256 bits (about 10⁷⁷), so we need a shortcut: the <b>double-and-add</b> method below.</div>
+
+<h2><span class="n">2</span>Fast method: double-and-add</h2>
+<div class="card" id="da"></div>
+<details><summary>Show the rule</summary><p>Write k in binary and read the bits from left to right. Start from ∞. For every bit: <b>double</b> the current point; if the bit is 1, also <b>add G</b>. Doubling and adding use the formulas above. The number of steps is the number of bits of k (about 256 for a real key) instead of k.</p></details>
+
+<h2><span class="n">3</span>Slow-motion visualization</h2>
+<div class="row"><button class="sec" id="prev">◀ Back</button><button id="next">Next ▶</button><button class="sec" id="auto">▶ Auto</button><button class="sec" id="rst">⟲ Reset</button></div>
+<div class="card" id="anim-txt"></div>
+<div id="svgbox"></div>
+<p class="mut" id="svgnote"></p>
+
+<h2><span class="n">4</span>Statistical exploration</h2>
+<div class="card"><div class="row">
+<label>Curve: <select id="scurve"><option value="17">Assignment curve, p = 17</option><option value="1669">Larger curve, p = 1669</option></select></label>
+<label>Base point G: <select id="sg"></select></label></div>
+<p class="mut" id="sexpl" style="margin:4px 0 0"></p></div>
+<div id="stats"></div>
+
+<h2><span class="n">5</span>Conclusion in simple words</h2>
+<div class="card">
+<p><b>Two different jobs.</b> A <b>hash</b> is like a blender: whatever goes in, what comes out looks random and you cannot tell what went in. Its goal is to scramble, which is why we tested bit balance, evenness, repeated values and avalanche. The curve operation Q = k·G is like a <b>padlock</b>: easy to snap shut (compute Q from k), very hard to open (find k from Q). A padlock does not have to look random; it only has to be hard to open.</p>
+<p><b>What the tests showed.</b> Part of the results look random (the bits are close to 50%, the avalanche is close to 50%), and part show structure (the x values come in pairs, and neighbouring keys are linked by the exact rule (k+1)G = kG + G). That is fine: a visible structure does not make it easy to find k.</p>
+<p><b>What really protects it.</b> With p = 17 or with the larger curve you can try every possible k in a blink. With the 256-bit numbers of Ethereum there are about 2²⁵⁶ possibilities, which is impossible to try. That is the security of the one-way function.</p>
+<p><b>Why Ethereum uses both.</b> The curve turns the private key into a public key; a hash then turns the public key into the short address.</p></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const f=p=>p?`(${p[0]}, ${p[1]})`:'∞';
+function makeCurve(P,G0){
+ const mod=a=>((a%P)+P)%P;
+ const inv=a=>{let r0=P,r1=mod(a),t0=0,t1=1;while(r1){const q=Math.floor(r0/r1);[r0,r1]=[r1,r0-q*r1];[t0,t1]=[t1,t0-q*t1]}return mod(t0)};
+ const add=(p,q)=>{
+  if(!p)return{r:q,note:'0 + Q = Q'};if(!q)return{r:p,note:'P + 0 = P'};
+  if(p[0]===q[0]&&mod(p[1]+q[1])===0)return{r:null,note:'P + (−P) = ∞'};
+  let l,note;
+  if(p[0]===q[0]&&p[1]===q[1]){l=mod(3*p[0]*p[0]*inv(2*p[1]));note='doubling'}
+  else{l=mod((q[1]-p[1])*inv(q[0]-p[0]));note='addition'}
+  const x=mod(l*l-p[0]-q[0]),y=mod(l*(p[0]-x)-p[1]);return{r:[x,y],l,note};
+ };
+ const all=[];for(let x=0;x<P;x++)for(let y=0;y<P;y++)if(mod(y*y)===mod(x**3+7))all.push([x,y]);
+ let G=G0;if(!G){for(let x=1;!G;x++)for(let y=1;y<P;y++)if(mod(y*y)===mod(x**3+7)){G=[x,y];break}}
+ const rows=[];let R=null;for(let k=1;k<=5000;k++){const o=add(R,G);R=o.r;rows.push({k,R,l:o.l,note:o.note});if(!R)break}
+ const pts=[null,...rows.map(r=>r.R)];
+ const mulDA=k=>{let R=null;const st=[];for(const b of k.toString(2)){R=add(R,R).r;let s=`bit ${b}: double → ${f(R)}`;if(b==='1'){R=add(R,G).r;s+=`; bit is 1, so add G → ${f(R)}`}st.push(s)}return{R,st}};
+ return{P,G,mod,add,all,rows,pts,order:rows.length,mulDA};
+}
+let C=makeCurve(17,[1,5]),K=6,step=0,timer=null;const pc=C.all.map(p=>makeCurve(17,p)),optLabel=c=>`${f(c.G)}${c.G[0]===1&&c.G[1]===5?' (assignment)':''}`;
+function setup(){K=Math.max(1,Math.min(+$('k').value||6,C.order-1));$('k').value=K;step=0;stop();render()}
+function render(){
+ const Q=C.pts[K],da=C.mulDA(K);
+ $('info').innerHTML=`G = (1, 5) is the base point given in the assignment. It lies on the curve: 5² = 25 ≡ 8 and 1³ + 7 = 8 (mod 17). The curve has <b>${C.all.length} points</b> plus ∞. After ${C.order} hops from G we are back at ∞, so k can be 1…${C.order-1}; the multiples of G reach ${C.order-1} of the ${C.all.length} points (the others are explained in the note on the drawing below).`;
+ $('res').innerHTML=`<span class="mut">Private key</span> k = <b>${K}</b> (binary ${K.toString(2)}) · <span class="mut">Base point</span> G = <b>${f(C.G)}</b><br><span class="big">Toy public key: Q = ${K}·G = ${f(Q)}</span>`;
+ let h='<tr><th>k</th><th>k·G</th><th>How it is computed</th><th>λ</th></tr>';
+ C.rows.forEach(r=>h+=`<tr class="${r.k===K?'sel':''}"><td>${r.k}</td><td>${f(r.R)}</td><td>${r.k===1?'base point':`${r.k-1}G + G (${r.note})`}</td><td>${r.l??'–'}</td></tr>`);
+ $('tab').innerHTML=h;
+ $('da').innerHTML=`k = ${K} in binary is <code>${K.toString(2)}</code>, so ${da.st.length} steps instead of ${K}.<br>`+da.st.map((s,i)=>`<div>${i+1}) ${s}</div>`).join('')+`<div style="margin-top:6px"><b>Result: ${K}·G = ${f(da.R)}</b> ${da.R&&da.R[0]===Q[0]&&da.R[1]===Q[1]?'✓ same as the slow method':'✗ mismatch'}</div>`;
+ draw();
+}
+function draw(){
+ const W=520,M=30,P=C.P,s=(W-2*M)/P,X=x=>M+x*s+s/2,Y=y=>W-M-y*s-s/2;
+ let g='';
+ for(let i=0;i<P;i++)g+=`<text x="${X(i)}" y="${W-8}" font-size="10" text-anchor="middle" fill="var(--mut)">${i}</text><text x="10" y="${Y(i)+3}" font-size="10" fill="var(--mut)">${i}</text>`;
+ C.all.forEach(p=>g+=`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${s/7}" fill="var(--mut)" opacity=".5"/>`);
+ const rs=new Set(C.pts.slice(1,C.order).map(p=>p.join())),ap=C.all.filter(p=>!rs.has(p.join())),an=ap.find(p=>p[0]===15&&p[1]===13)||ap[0];if(an){const ax=X(an[0]),ay=Y(an[1]),bx=290,by=165;g+=`<line x1="${ax}" y1="${ay+8}" x2="${ax}" y2="${by}" stroke="var(--mut)" stroke-width="1.2"/><circle cx="${ax}" cy="${ay}" r="${s/7+3}" fill="none" stroke="var(--mut)" stroke-width="1.2"/><rect x="${bx}" y="${by}" width="220" height="90" rx="8" fill="var(--card)" stroke="var(--mut)" stroke-width="1.2"/><text x="${bx+10}" y="${by+18}" font-size="11" font-weight="700" fill="var(--fg)">What are the unlabeled dots?</text><text x="${bx+10}" y="${by+35}" font-size="11" fill="var(--fg)">Also points of the curve (17 in</text><text x="${bx+10}" y="${by+50}" font-size="11" fill="var(--fg)">total), but hopping from G never</text><text x="${bx+10}" y="${by+65}" font-size="11" fill="var(--fg)">lands on them: you visit only 8</text><text x="${bx+10}" y="${by+80}" font-size="11" fill="var(--fg)">and then loop back to the start.</text>`}const sv=Math.min(step,C.order-1);for(let j=sv+1;j<C.order;j++){const p=C.pts[j];g+=`<text x="${X(p[0])+6}" y="${Y(p[1])-5}" font-size="11" fill="var(--fg)" opacity=".8">${j}G</text>`}
+ const path=[];for(let j=1;j<=sv;j++)path.push(`${X(C.pts[j][0])},${Y(C.pts[j][1])}`);
+ if(path.length>1)g+=`<polyline points="${path.join(' ')}" fill="none" stroke="var(--ac)" stroke-width="1.5"/>`;
+ for(let j=1;j<=sv;j++){const p=C.pts[j],cur=j===step,q=j===K;g+=`${q?`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="12" fill="none" stroke="var(--hi)" stroke-width="2"/>`:''}<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${cur?7:5}" fill="${q?'var(--hi)':j>K?'var(--ac2)':'var(--ac)'}"/><text x="${X(p[0])+8}" y="${Y(p[1])-6}" font-size="11" font-weight="${q?700:400}" fill="var(--fg)">${j}G${q?' = Q':''}</text>`}
+ $('svgbox').innerHTML=`<svg viewBox="0 0 ${W} ${W}" role="img" aria-label="Points of the curve and multiples of G">${g}</svg>`;
+ const r=C.rows[step-1];
+ $('anim-txt').innerHTML=step===0?'Press <b>Next</b>. Grey dots are all the points of the curve, each named after the multiple of G that lands on it (the grey dots without a label are explained in the note on the drawing). Press Next to visit G, 2G, 3G, … one by one; you can go past k to reach every multiple of G.':
+  `Step ${step}/${C.order}: <b>${step}G = ${f(r.R)}</b>${step===K?' ← this is the public key Q':''}<br>`+(step===1?'We start from the base point G.':`${step===C.order?`${step-1}G is the mirror point of G (same x, opposite y), so adding G gives ∞`:`${step-1}G + G (${r.note}), λ = ${r.l} → x₃ = λ² − x₁ − x₂, y₃ = λ(x₁ − x₃) − y₁ (mod ${P})`}`)+(step===K?'<br><b>Reached the public key.</b> Keep pressing Next to visit the remaining points.':'')+(step===C.order?'<br>The cycle is closed: after this the sequence repeats from G.':'');
+ $('svgnote').innerHTML=`Press Next to visit the ${C.order-1} multiples of G; hop number ${C.order} lands on ∞ (not drawn) and the cycle repeats. Blue = path to the public key, red ring = public key Q = ${K}G, purple = points beyond k. The remaining ${C.all.length-C.order+1} grey dots without a label are explained in the note on the drawing.`;
+}
+function stop(){clearInterval(timer);timer=null;$('auto').textContent='▶ Auto'}
+const nxt=()=>{if(step<C.order){step++;draw()}else stop()};
+$('next').onclick=()=>{stop();nxt()};$('prev').onclick=()=>{stop();if(step>0){step--;draw()}};$('rst').onclick=()=>{stop();step=0;draw()};
+$('auto').onclick=()=>{if(timer){stop();return}if(step>=C.order)step=0;$('auto').textContent='⏸ Pause';timer=setInterval(nxt,1000);nxt()};
+$('go').onclick=setup;
+
+/* ---------- statistics ---------- */
+const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+function pear(a,b){const ma=mean(a),mb=mean(b);let n=0,da=0,db=0;a.forEach((v,i)=>{n+=(v-ma)*(b[i]-mb);da+=(v-ma)**2;db+=(b[i]-mb)**2});return n/Math.sqrt(da*db)}
+const pop=n=>{let c=0;while(n){c+=n&1;n>>=1}return c};
+const hist=(a,P,bins)=>{const c=Array(bins).fill(0);a.forEach(v=>c[Math.min(bins-1,Math.floor(v*bins/P))]++);return c};
+const bin=(v,nb)=>v.toString(2).padStart(nb,'0');
+const hbar=(c,P,E)=>{const W=520,H=176,L=10,B=30,T=18,n=c.length,bw=(W-2*L)/n,mx=Math.max(...c,E||0,1),Y=v=>H-B-(H-B-T)*v/mx;let g='';
+ c.forEach((v,i)=>{const x=L+i*bw,first=Math.ceil(i*P/n);g+=`<rect x="${x+2}" y="${Y(v)}" width="${bw-4}" height="${H-B-Y(v)}" rx="3" fill="var(--ac)"/><text x="${x+bw/2}" y="${Y(v)-4}" font-size="10" text-anchor="middle" fill="var(--fg)">${v}</text><text x="${x+bw/2}" y="${H-16}" font-size="9.5" text-anchor="middle" fill="var(--mut)">${first}</text>`});
+ if(E)g+=`<line x1="${L}" x2="${W-L}" y1="${Y(E)}" y2="${Y(E)}" stroke="var(--hi)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-L}" y="${Y(E)-4}" font-size="10" text-anchor="end" fill="var(--hi)">ideal: ${E.toFixed(1)} per range</text>`;
+ return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart: keys per range of values">${g}<text x="${L}" y="${H-3}" font-size="10" fill="var(--mut)">Number above a bar = keys in that range. Label under a bar = first value of the range.</text></svg>`};
+const bitBars=a=>{const W=520,H=140,L=10,B=34,T=18,n=a.length,bw=(W-2*L)/n,Y=v=>H-B-(H-B-T)*v;
+ let g=`<line x1="${L}" x2="${W-L}" y1="${Y(.5)}" y2="${Y(.5)}" stroke="var(--hi)" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W-L}" y="${Y(.5)-4}" font-size="10" text-anchor="end" fill="var(--hi)">ideal 50%</text>`;
+ for(let i=0;i<n;i++){const j=n-1-i,v=a[j],x=L+i*bw;g+=`<rect x="${x+3}" y="${Y(v)}" width="${bw-6}" height="${H-B-Y(v)}" rx="3" fill="var(--ac)"/><text x="${x+bw/2}" y="${Y(v)-4}" font-size="10" text-anchor="middle" fill="var(--fg)">${Math.round(v*100)}%</text><text x="${x+bw/2}" y="${H-20}" font-size="10" text-anchor="middle" fill="var(--mut)">bit ${j}</text>`}
+ return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of ones for each bit position">${g}<text x="${L}" y="${H-4}" font-size="10" fill="var(--mut)">Percentage = how often that bit is 1 among all keys. The leftmost bar is the highest bit.</text></svg>`};
+const scat=(v,P)=>{const W=250,H=170,L=34,B=30,T=10,R=8,n=v.length,X=i=>L+(W-L-R)*i/(n-1||1),Y=a=>H-B-(H-B-T)*a/(P-1),r=n>100?1.6:3.5;
+ let g=`<line x1="${L}" x2="${L}" y1="${T}" y2="${H-B}" stroke="var(--ln)"/><line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="var(--ln)"/><text x="${L-4}" y="${T+4}" font-size="9.5" text-anchor="end" fill="var(--mut)">${P-1}</text><text x="${L-4}" y="${H-B+3}" font-size="9.5" text-anchor="end" fill="var(--mut)">0</text><text x="${L}" y="${H-16}" font-size="9.5" fill="var(--mut)">k = 1</text><text x="${W-R}" y="${H-16}" font-size="9.5" text-anchor="end" fill="var(--mut)">k = ${n}</text>`;
+ v.forEach((a,i)=>g+=`<circle cx="${X(i)}" cy="${Y(a)}" r="${r}" fill="var(--ac)" opacity=".75"/>`);
+ return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Each dot is one key">${g}</svg>`};
+const gauge=(v,lim)=>`<div class="gauge"><div class="gf" style="width:${Math.min(100,v/(2*lim)*100)}%"></div><div class="gl"></div></div>`;
+const chi=(c,E)=>c.reduce((s,o)=>s+(o-E)**2/E,0);
+async function sha(){let t=0,n=0;const e=new TextEncoder();for(let k=1;k<=200;k++){const a=new Uint8Array(await crypto.subtle.digest('SHA-256',e.encode(String(k)))),b=new Uint8Array(await crypto.subtle.digest('SHA-256',e.encode(String(k^1))));a.forEach((v,i)=>t+=pop(v^b[i]));n+=256}return t/n}
+function fillG(){
+ const sel=$('sg'),P=+$('scurve').value;sel.innerHTML='';
+ if(P===17){pc.filter(c=>c.order===9).forEach(c=>sel.add(new Option(optLabel(c),c.G.join(','))));sel.value='1,5';sel.disabled=false;
+  $('sexpl').innerHTML='With G = (1, 5) the multiples of G are only 8 points (the curve has 17, see the note in section 3), so there are just 8 keys k: perfect to <i>see</i> the structure, too small for real statistics. You can also try the other base points that loop back after 9 hops: they visit the same 8 points, only the key k that lands on each one changes.'}
+ else{const c=makeCurve(P);sel.add(new Option(f(c.G)+' (first valid point, found automatically)',c.G.join(',')));sel.disabled=true;
+  $('sexpl').innerHTML=`The larger curve (same equation, p = ${P}) has ${c.all.length} points. The base point is the first valid point found, ${f(c.G)}, and its hops loop back after ${c.order} steps, so we get ${c.order-1} keys: many more than 8, so the charts and tests start to mean something. The only requirement on p is to be a prime number (other than 3 and 7); this one was picked because the loop of any base point then passes through all the points of the curve.`}
+ stats();
+}
+function stats(){
+ const P=+$('scurve').value,[gx,gy]=$('sg').value.split(',').map(Number),S=makeCurve(P,[gx,gy]),m=S.order-1;
+ const ks=[],xs=[],ys=[];for(let k=1;k<=m;k++){ks.push(k);xs.push(S.pts[k][0]);ys.push(S.pts[k][1])}
+ const nb=Math.ceil(Math.log2(P)),bins=17,E=m/bins,crit=26.30;
+ const bf=a=>Array.from({length:nb},(_,i)=>mean(a.map(v=>(v>>i)&1)));
+ const cx=hist(xs,P,bins),cy=hist(ys,P,bins),X2=chi(cx,E),Y2=chi(cy,E);
+ const cnt=a=>{const o={};a.forEach(v=>o[v]=(o[v]||0)+1);return o},ox=cnt(xs),oy=cnt(ys);
+ const mult=(o,w)=>{const r={};Object.values(o).forEach(c=>r[c]=(r[c]||0)+1);return Object.entries(r).map(([c,n])=>`${n} ${w}${n>1?'s':''} appear${n>1?'':'s'} ${c} time${c>1?'s':''}`).join(', ')};
+ const chips=o=>Object.entries(o).map(([v,c])=>`<span class="chip">${v}: ${c}×</span>`).join('');
+ const verdict=x2=>E<5?'too few keys for a reliable verdict':(x2<crit?'looks evenly spread':'does not look evenly spread');
+ const lag=a=>pear(a.slice(0,-1),a.slice(1));
+ let t=0,c=0;for(let k=1;k<=m;k++)for(let i=0;i<Math.ceil(Math.log2(S.order))+1;i++){const k2=k^(1<<i);if(k2>=1&&k2<=m){t+=pop(S.pts[k][0]^S.pts[k2][0])+pop(S.pts[k][1]^S.pts[k2][1]);c+=2*nb}}
+ const av=t/c,ckx=pear(ks,xs),cky=pear(ks,ys),bx=bf(xs),by=bf(ys),exk=Math.min(3,m),ex=S.pts[exk];
+ const mp=Array.from({length:Math.min(m,16)},(_,i)=>`<span class="chip">${i+1}G = (${xs[i]}, ${ys[i]})</span>`).join('');
+ const bmin=Math.round(100*Math.min(...bx,...by)),bmax=Math.round(100*Math.max(...bx,...by));
+ const twice=Object.values(ox).every(v=>v===2);
+ $('stats').innerHTML=`<div class="card">We take every key k that this base point can produce (k = 1…${m}, so ${m} public keys) on the curve with p = ${P}. Each key gives a point (x, y), and x and y are whole numbers from 0 to ${P-1}. Below we check, one test at a time, whether these points look random, the way the output of a hash function would.</div>
+ <div class="card"><h3>Keys and points for G = ${f(S.G)}</h3>${mp}${m>16?' …':''}${P===17?'<br><span class="mut">Changing G only changes which k lands on which point. The set of '+m+' points is always the same, so the histograms, frequencies, bits and uniformity below cannot change; correlation and avalanche, which depend on which k lands on which point, do.</span>':''}</div>
+ <div class="card"><h3>4a. Spread of x and y</h3><p style="margin:0 0 6px"><b>What we check:</b> are the results spread evenly over all possible values? We cut the values 0…${P-1} into ${bins} equal ranges and count how many keys fall in each range.</p><b>x</b>${hbar(cx,P)}<b>y</b>${hbar(cy,P)}<span class="mut"><b>What to look for:</b> bars of similar height. ${m<40?'With so few keys most bars are 0, 1 or 2, so there is little to conclude.':''}</span></div>
+ <div class="card"><h3>4b. Repeated values</h3><p style="margin:0 0 6px"><b>What we check:</b> how many times the same number comes out. A good hash almost never gives the same output twice.</p>x: ${Object.keys(ox).length} different values among the ${m} keys; ${mult(ox,'value')}.<br>y: ${Object.keys(oy).length} different values; ${mult(oy,'value')}.
+ <br><span class="mut"><b>Why do x values repeat?</b> The points kG and (n−k)G are mirror images: same x, opposite y. So x always comes in pairs.</span>${P<=17?`<br><span class="mut">x value: times used</span> ${chips(ox)}<br><span class="mut">y value: times used</span> ${chips(oy)}`:''}</div>
+ <div class="card"><h3>4c. Distribution of bits</h3><p style="margin:0 0 6px"><b>What we check:</b> numbers are stored in binary, as a row of 0s and 1s (bits). In a random-looking number each bit is 1 about half of the time.</p><b>How:</b> x and y are converted <i>separately</i>, each written with ${nb} bits (zeros added on the left; ${nb} bits are enough because the largest value is ${P-1}). <b>Example:</b> key k = ${exk} gives the point (${ex[0]}, ${ex[1]}); x = ${ex[0]} is <code>${bin(ex[0],nb)}</code> and y = ${ex[1]} is <code>${bin(ex[1],nb)}</code>. We do this for all ${m} keys and, for each bit position, count how often the bit is 1. Bit 0 is the rightmost digit.<br><b>x</b>${bitBars(bx)}<b>y</b>${bitBars(by)}<span class="mut">The leftmost bars can be low because p is not a power of 2: values never go above ${P-1}.</span></div>
+ <div class="card"><h3>4d. Is it evenly spread? The score</h3><p style="margin:0 0 6px"><b>Idea:</b> if the ${m} keys were spread perfectly evenly, each of the ${bins} ranges would get ${E.toFixed(1)} keys (red dashed line). We measure how far the bars are from that line and add everything up into one number, the <i>chi-square score</i>. Low score = bars close to the line. Rule of thumb: below ${crit} counts as evenly spread.</p><b>x</b> (same bars as in 4a, now compared with the ideal)${hbar(cx,P,E)}<b>y</b>${hbar(cy,P,E)}
+ <div>x: score <b>${X2.toFixed(1)}</b> (limit ${crit}) → ${verdict(X2)}${gauge(X2,crit)}y: score <b>${Y2.toFixed(1)}</b> (limit ${crit}) → ${verdict(Y2)}${gauge(Y2,crit)}</div><span class="mut">The bar fills up to the dashed line when the score reaches the limit.${E<5?' Here the ideal is less than 5 keys per range, so the test is unreliable.':''} Because x values come in pairs, the score for x tends to be a bit too high, so read it as a rough guide.</span></div>
+ <div class="card"><h3>4e. Relation between k and the result</h3><p style="margin:0 0 6px"><b>Two questions:</b> (1) when the key k grows, do x or y grow (or shrink) in a regular way? (2) do two neighbouring keys, k and k+1, give similar x or similar y? Each answer is a score from −1 to +1: near 0 means no straight-line relation, near +1 means they grow together, near −1 means one grows when the other shrinks.</p>
+ <div class="grid2"><div><b>x of each key</b> (left to right: k = 1…${m})${scat(xs,P)}</div><div><b>y of each key</b>${scat(ys,P)}</div></div>
+ (1) k and x: <b>${ckx.toFixed(2)}</b>; k and y: <b>${cky.toFixed(2)}</b><br>(2) x of key k and x of key k+1: <b>${lag(xs).toFixed(2)}</b>; same for y: <b>${lag(ys).toFixed(2)}</b><br><span class="mut">Scores near 0 only rule out a <i>straight-line</i> trend: there is still an exact rule linking neighbours, (k+1)G = kG + G. ${m<40?'With only '+m+' keys the scores can be far from 0 just by chance.':''}</span></div>
+ <div class="card"><h3>4f. Avalanche-like behaviour</h3><b>What we check:</b> change <i>one</i> bit of k and see how many bits of the result (x and y together, ${2*nb} bits) change. Averaged over all keys and all single-bit changes: <b>${(av*100).toFixed(1)}%</b>. A good hash gives about 50%. <span id="shav" class="mut">Computing SHA-256 comparison…</span></div>
+ <div class="card wrap"><h3>4g. Summary: which tests matter for what?</h3><p style="margin:0 0 6px">A <b>hash function</b> scrambles its input so the output looks random: the tests above are its quality checks. A <b>one-way function</b> only has to be hard to reverse. Reading the last column: for a one-way function the statistical tests do not matter, only the last row does.</p>
+ <table><tr><th>Test</th><th>A good hash would show</th><th>What we saw with kG</th><th>Needed by a one-way function?</th></tr>
+ <tr><td>4a Spread of x and y</td><td>Bars of similar height</td><td>${Math.min(...cx)} to ${Math.max(...cx)} keys per range (ideal ${E.toFixed(1)})</td><td>No</td></tr>
+ <tr><td>4b Repeated values</td><td>Outputs almost never repeat</td><td>${twice?'Every x appears exactly twice':'x values repeat'}</td><td>No</td></tr>
+ <tr><td>4c Bits</td><td>Each bit is 1 about 50% of the time</td><td>${bmin}% to ${bmax}%</td><td>No</td></tr>
+ <tr><td>4d Evenness score</td><td>Below ${crit}</td><td>x: ${X2.toFixed(1)}, y: ${Y2.toFixed(1)}</td><td>No</td></tr>
+ <tr><td>4e Relation k to result</td><td>None</td><td>k and x: ${ckx.toFixed(2)}; but an exact rule links neighbours</td><td>No</td></tr>
+ <tr><td>4f Avalanche</td><td>About 50%</td><td>${(av*100).toFixed(0)}%</td><td>No</td></tr>
+ <tr><td><b>Hardness of finding k from Q</b></td><td>Not the goal of a hash</td><td>Trivial here (try every k); impossible with 256-bit numbers</td><td><b>Yes: this is the definition</b></td></tr></table></div>`;
+ sha().then(v=>{const e=$('shav');if(e)e.innerHTML=`For comparison, SHA-256 (k vs k⊕1, 200 samples): <b>${(v*100).toFixed(1)}%</b>.`});
+}
+$('scurve').onchange=fillG;$('sg').onchange=stats;
+setup();fillG();
+</script></body></html>
