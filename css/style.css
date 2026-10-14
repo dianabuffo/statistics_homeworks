@@ -1,0 +1,211 @@
+:root {
+  --bg: #f8faff;
+  --bg-card: #ffffff;
+  --fg: #1e293b;
+  --fg-muted: #64748b;
+  --fg-subtle: #94a3b8;
+  --primary: #3d5afe;
+  --primary-light: #6366f1;
+  --primary-glow: rgba(61, 90, 254, 0.18);
+  --accent: #7c4dff;
+  --accent2: #06b6d4;
+  --hi: #f43f5e;
+  --success: #10b981;
+  --border: #e2e8f0;
+  --border-hover: #c7d2fe;
+  --card-shadow: 0 6px 24px -2px rgba(61, 90, 254, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  --card-shadow-hover: 0 16px 36px -4px rgba(61, 90, 254, 0.18), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  --font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg);
+  color: var(--fg);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* NAVBAR CENTRATA */
+.navbar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 20px 20px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand-centered {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.brand-centered:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.brand-title {
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.15;
+}
+
+.brand-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  margin-top: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* CONTENITORE CENTRATO */
+.container {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 44px 20px 80px;
+}
+
+/* GRIGLIA DEGLI HOMEWORK */
+.hw-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* RETTANGOLI / SCHEDE HOMEWORK */
+.hw-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 30px 34px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--card-shadow);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+}
+
+.hw-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-3px);
+}
+
+.hw-card.active-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--accent2));
+}
+
+.hw-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.hw-number {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: rgba(61, 90, 254, 0.08);
+  padding: 4px 14px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.hw-card h3 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  line-height: 1.35;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+.hw-card p {
+  color: var(--fg-muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
+  margin: 0 0 22px;
+}
+
+.hw-actions {
+  display: flex;
+  margin-top: auto;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #ffffff;
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 22px rgba(61, 90, 254, 0.35);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding: 18px 16px;
+  }
+  .brand-title {
+    font-size: 1.75rem;
+  }
+  .container {
+    padding: 28px 16px 50px;
+  }
+  .hw-card {
+    padding: 22px 20px;
+    border-radius: 16px;
+  }
+  .hw-card h3 {
+    font-size: 1.25rem;
+  }
+}
