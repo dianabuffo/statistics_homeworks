@@ -1,578 +1,529 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>HMWK 2 – From Wallet Seed to Ethereum Address | Diana Buffo</title>
+  <title>Homework 2 – Toy ECC Encryption, Caesar Cipher and Cryptanalysis | Diana Buffo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/homework2.css">
 </head>
+
 <body>
 
   <!-- NAVBAR CENTRATA -->
   <nav class="navbar">
-    <a href="index.html" class="brand-centered" title="Return to Home">
+    <a href="index.html" class="brand-centered" title="Torna alla Home">
       <span class="brand-title">Statistics</span>
       <span class="brand-subtitle">Diana Buffo</span>
     </a>
   </nav>
 
-  <!-- HEADER IDENTICO AD HOMEWORK 1 -->
+  <!-- HEADER -->
   <header>
     <div>
-      <h1>From Wallet Seed to Ethereum Address: Hashing, Key Derivation and Cryptographic Primitives</h1>
-      <p>An Ethereum address is built from a 12-word mnemonic in six deterministic steps. Each step uses a different tool because each solves a different problem: key management, public-key cryptography, hashing and error detection.</p>
+      <div class="hw-tag">Homework 2</div>
+      <h1>🔐 Toy ECC Encryption, Caesar Cipher and Cryptanalysis</h1>
+      <p>MSc in Cybersecurity · Statistics & Cryptography Lab · Diana Buffo. Comparing algebraic one-way trapdoors with
+        classical substitution ciphers.</p>
     </div>
   </header>
 
   <main>
-    <!-- SECTION 1: THE PIPELINE AT A GLANCE -->
-    <h2><span class="n">1</span> The pipeline at a glance</h2>
-    <div class="card">
-      <p style="margin-top:0">
-        <b>Six steps turn 12 words into one address, each with a different tool.</b>
-        Each box is the form the data takes; each arrow is a step, named with its tool and the kind of job it does.
-      </p>
-
-      <div class="pipeline-flow">
-        <!-- NODE 1 -->
-        <div class="pipeline-node node-mnemonic">
-          <div class="pipeline-node-data">
-            <span class="pipeline-node-name">1. Mnemonic phrase</span>
-            <span class="pipeline-node-spec">12 or 24 words from BIP-39 wordlist (128–256 bits entropy)</span>
-          </div>
-          <span class="table-badge badge-sky">Starting Input</span>
-        </div>
-
-        <!-- STEP 1 -->
-        <div class="pipeline-step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-info">
-            <span class="step-chip chip-sky">BIP-39</span>
-            <span><b>Key management:</b> Words stretched with PBKDF2-HMAC-SHA512 (2048 iterations) into a 512-bit seed</span>
-          </div>
-        </div>
-
-        <!-- NODE 2 -->
-        <div class="pipeline-node node-seed">
-          <div class="pipeline-node-data">
-            <span class="pipeline-node-name">2. Seed</span>
-            <span class="pipeline-node-spec">512 bits (64 bytes raw binary)</span>
-          </div>
-          <span class="table-badge badge-indigo">Intermediate</span>
-        </div>
-
-        <!-- STEP 2 -->
-        <div class="pipeline-step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-info">
-            <span class="step-chip chip-indigo">BIP-32 & BIP-44</span>
-            <span><b>Key management:</b> HMAC-SHA512 builds HD key tree; derivation path picks the account</span>
-          </div>
-        </div>
-
-        <!-- NODE 3 -->
-        <div class="pipeline-node node-privkey">
-          <div class="pipeline-node-data">
-            <span class="pipeline-node-name">3. Private key</span>
-            <span class="pipeline-node-spec">256 bits (32 bytes), kept strictly secret</span>
-          </div>
-          <span class="table-badge badge-rose">Confidential Secret</span>
-        </div>
-
-        <!-- STEP 3 -->
-        <div class="pipeline-step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-info">
-            <span class="step-chip chip-purple">secp256k1</span>
-            <span><b>Public-key cryptography:</b> Q = k·G on the curve: easy forward, infeasible to reverse (ECDLP)</span>
-          </div>
-        </div>
-
-        <!-- NODE 4 -->
-        <div class="pipeline-node node-pubkey">
-          <div class="pipeline-node-data">
-            <span class="pipeline-node-name">4. Public key</span>
-            <span class="pipeline-node-spec">64 bytes: uncompressed x and y coordinates (excluding 0x04 prefix)</span>
-          </div>
-          <span class="table-badge badge-amber">Public Point</span>
-        </div>
-
-        <!-- STEP 4 -->
-        <div class="pipeline-step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-info">
-            <span class="step-chip chip-orange">Keccak-256</span>
-            <span><b>Hashing:</b> Hash the 64-byte public key and keep the last 20 bytes (40 hex chars)</span>
-          </div>
-        </div>
-
-        <!-- NODE 5 -->
-        <div class="pipeline-node node-address">
-          <div class="pipeline-node-data">
-            <span class="pipeline-node-name">5. Ethereum address</span>
-            <span class="pipeline-node-spec">20 bytes (40 lowercase hex characters)</span>
-          </div>
-          <span class="table-badge badge-orange">Raw Identifier</span>
-        </div>
-
-        <!-- STEP 5 -->
-        <div class="pipeline-step-arrow">
-          <div class="arrow-line"></div>
-          <div class="arrow-info">
-            <span class="step-chip chip-emerald">EIP-55</span>
-            <span><b>Checksum:</b> Capitalize letters matching hash nibbles ≥ 8 (detects typos, value unchanged)</span>
-          </div>
-        </div>
-
-        <!-- NODE 6 -->
-        <div class="pipeline-node node-checksum">
-          <div class="pipeline-node-data">
-            <span class="pipeline-node-name">6. Checksummed address</span>
-            <span class="pipeline-node-spec" style="color: #065f46;">0x prefix + mixed upper/lower case hex string (e.g. 0x5aAeb605...)</span>
-          </div>
-          <span class="table-badge badge-emerald">Final Safe Output</span>
-        </div>
+    <!-- OVERVIEW GRID DEI 5 MODULI -->
+    <div class="grid">
+      <div class="card"><b>1. Toy ECC Scheme</b><br>Asymmetric key agreement over secp256k1 + SHA-256 keystream stream
+        encryption.</div>
+      <div class="card"><b>2. Caesar Cipher</b><br>Monoalphabetic classical substitution by modular letter displacement.
       </div>
-      <p class="mut" style="margin: 8px 0 0; text-align: center;">
-        wallet pipeline · 6 forms of the data, 5 steps
+      <div class="card"><b>3. Comparative Analysis</b><br>Procedures, key entropy, Shannon entropy and Index of
+        Coincidence.</div>
+      <div class="card"><b>4. Caesar Cryptanalysis</b><br>Automated key recovery using frequency heuristics, &chi;²,
+        bigrams and dictionary matching.</div>
+      <div class="card"><b>5. Discrete Log Attacks</b><br>Exhaustive search and Baby-Step Giant-Step (BSGS) key
+        recovery, plus architectural limits.</div>
+    </div>
+
+    <!-- CONTROLLI GLOBALI (MESSAGGIO E CHIAVE BOB) -->
+    <div class="card">
+      <h3 style="margin-top:0;">Global Cryptographic Inputs</h3>
+      <div class="row">
+        <label>Message: <input id="msg" value="MEET ME AT NOON" style="width:260px; font-weight:700;"></label>
+        <label>Bob's Private Key Range:
+          <select id="bits">
+            <option value="16">16 bits (1 … 65,536)</option>
+            <option value="20" selected>20 bits (about 1,048,576)</option>
+            <option value="24">24 bits (about 16.7 million)</option>
+            <option value="32">32 bits (about 4.29 billion)</option>
+          </select>
+        </label>
+      </div>
+      <span class="mut">The same message is encrypted by both schemes to allow side-by-side comparative analysis. In
+        Sections 1 and 5, Bob's key space is restricted to enable live cryptanalysis in the browser.</span>
+    </div>
+
+    <!-- SEZIONE 1: TOY ECC SCHEME -->
+    <h2><span class="n">1</span> Toy ECC scheme on secp256k1</h2>
+    <div class="card">
+      <b>Connection to Homework 1 pt.1.</b> In Homework 1 pt.1, we studied scalar point multiplication <code
+        style="background:rgba(61,90,254,0.08); padding:2px 6px;">Q = k·G</code> on a toy curve. Here, we extend this
+      primitive into a full hybrid encryption protocol (ECIES / ElGamal-style) on the production <b>secp256k1</b> curve
+      (<code style="background:rgba(61,90,254,0.08); padding:2px 6px;">y² = x³ + 7 mod p</code> with 256-bit prime
+      <i>p</i>).
+      <p style="margin:8px 0 0;">
+        Bob publishes public key <b>Q = k·G</b>. When Alice sends a message, she samples a fresh ephemeral scalar
+        <b>r</b>, computes public ephemeral point <b>C1 = r·G</b>, and shared point <b>S = r·Q = r·(k·G) = k·(r·G) =
+          k·C1</b>. The x-coordinate of S is hashed with SHA-256 to produce an unpredictable keystream, and the
+        plaintext message is combined via XOR (<b>C2 = M &oplus; keystream</b>). Bob decrypts by recovering S using his
+        secret <b>k</b>.
       </p>
     </div>
 
-    <!-- SECTION 2: ROLE OF EACH STANDARD AND PRIMITIVE -->
-    <h2><span class="n">2</span> Role of each standard and primitive</h2>
-    <div class="card">
-      <p><b>BIP-39: mnemonic and seed.</b> The wallet generates random entropy (128 bits for 12 words, 256 bits for 24). It appends a short checksum taken from the SHA-256 hash of the entropy (4 or 8 bits) and splits the result into 11-bit groups, each mapped to a word from a fixed list of 2048 words. The mnemonic, plus an optional passphrase, goes through PBKDF2-HMAC-SHA512 (2048 iterations) and produces a 512-bit seed. Same phrase and passphrase always give the same seed.</p>
-      
-      <p><b>BIP-32: hierarchical deterministic (HD) keys.</b> HMAC-SHA512 turns the seed into a master key and a chain code. Every parent key can deterministically derive child keys, which forms a tree. One backup of the seed restores every key. "Hardened" derivation (marked with an apostrophe) stops someone who knows a child private key and the parent's extended public key from recovering the parent private key.</p>
-
-      <p><b>BIP-44: standard derivation paths.</b> It fixes the structure <code>m / purpose' / coin_type' / account' / change / address_index</code>. For Ethereum the first account is <code>m/44'/60'/0'/0/0</code> (60 = Ethereum, 0 = Bitcoin). Thanks to this standard, MetaMask, Rabby, Exodus or Rainbow find the same addresses from the same mnemonic.</p>
-
-      <p><b>secp256k1: public-key cryptography.</b> The elliptic curve <code>y² = x³ + 7</code> over a finite field of about 2²⁵⁶ elements. The public key is <code>Q = k·G</code>, where k is the private key and G is the fixed base point. Going back from Q to k means solving the Elliptic Curve Discrete Logarithm Problem (ECDLP), which is considered infeasible. The same curve is used for digital signatures (ECDSA): whoever knows k signs, anyone can verify with Q. HMWK 1 shows this idea on a toy curve.</p>
-
-      <p><b>Keccak-256: hashing.</b> The address is the last 20 bytes (40 hex characters) of the Keccak-256 hash of the 64-byte public key (x ‖ y, without the 0x04 prefix).</p>
-
-      <p style="margin-bottom:0"><b>EIP-55: checksum.</b> Compute Keccak-256 of the lowercase address (without 0x, as ASCII text). For each letter a–f of the address, if the matching hex digit of the hash is 8 or more, write the letter in uppercase. Example from the EIP-55 specification: <code>0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed</code>. The value of the address does not change, but a typo breaks the capitalization pattern and the wallet can warn the user. A random typo goes unnoticed with probability about 2⁻ⁿ, where n is the number of letters in the address (on average about 15, so roughly 1 in 32,000).</p>
-    </div>
-
-    <!-- SECTION 3: FIVE CONCEPTS THAT ARE EASY TO CONFUSE -->
-    <h2><span class="n">3</span> Five concepts that are easy to confuse</h2>
-    <div class="card wrap" style="padding:0;">
+    <div class="wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Concept</th>
-            <th>What it is</th>
-            <th>Where it appears</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><b>Key generation</b> <span class="table-badge badge-sky" style="font-size:0.75rem; margin-left:4px;">Generation</span></td>
-            <td>Creating something new and random</td>
-            <td>The initial entropy of BIP-39</td>
-          </tr>
-          <tr>
-            <td><b>Key derivation</b> <span class="table-badge badge-indigo" style="font-size:0.75rem; margin-left:4px;">Derivation</span></td>
-            <td>Computing keys deterministically from an existing secret</td>
-            <td>PBKDF2 (seed), BIP-32 and BIP-44 (child keys)</td>
-          </tr>
-          <tr>
-            <td><b>Public-key cryptography</b> <span class="table-badge badge-purple" style="font-size:0.75rem; margin-left:4px;">Asymmetric</span></td>
-            <td>A private/public key pair for signing and verifying</td>
-            <td>secp256k1</td>
-          </tr>
-          <tr>
-            <td><b>Hashing</b> <span class="table-badge badge-orange" style="font-size:0.75rem; margin-left:4px;">One-way</span></td>
-            <td>A keyless, one-way function with a fixed-size output</td>
-            <td>Keccak-256 (and SHA-256/SHA-512 inside BIP-39 and BIP-32)</td>
-          </tr>
-          <tr>
-            <td><b>Checksum</b> <span class="table-badge badge-emerald" style="font-size:0.75rem; margin-left:4px;">Integrity</span></td>
-            <td>Detects accidental errors; protects nothing against attackers</td>
-            <td>BIP-39 checksum, EIP-55</td>
-          </tr>
-          <tr>
-            <td><b>Encoding</b> <span class="table-badge" style="font-size:0.75rem; margin-left:4px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">Format</span></td>
-            <td>Another way to write the same data; no security at all</td>
-            <td>BIP-39 words, hexadecimal, the 0x prefix</td>
-          </tr>
-        </tbody>
+        <tr>
+          <th>Symbol</th>
+          <th>Entity</th>
+          <th>Classification</th>
+          <th>Cryptographic Role</th>
+        </tr>
+        <tr>
+          <td><b>k</b></td>
+          <td>Bob (Receiver)</td>
+          <td><span class="table-badge badge-rose">Private Scalar</span></td>
+          <td>Secret scalar: <code class="mono">1 &le; k &le; 2<sup>bits</sup></code>. Inverts C1 into shared secret S.
+          </td>
+        </tr>
+        <tr>
+          <td><b>Q = k·G</b></td>
+          <td>Bob (Receiver)</td>
+          <td><span class="table-badge badge-sky">Public Key</span></td>
+          <td>Public curve point. Allows any sender to establish a shared secret with Bob.</td>
+        </tr>
+        <tr>
+          <td><b>r</b></td>
+          <td>Alice (Sender)</td>
+          <td><span class="table-badge badge-rose">Ephemeral Scalar</span></td>
+          <td>One-time cryptographically secure random number (full 256 bits).</td>
+        </tr>
+        <tr>
+          <td><b>C1 = r·G</b></td>
+          <td>Alice &rarr; Bob</td>
+          <td><span class="table-badge badge-sky">Public Ephemeral</span></td>
+          <td>First component of ciphertext. Allows Bob to derive S via scalar multiplication.</td>
+        </tr>
+        <tr>
+          <td><b>S = r·Q = k·C1</b></td>
+          <td>Alice & Bob</td>
+          <td><span class="table-badge badge-purple">Shared Point</span></td>
+          <td>Diffie-Hellman secret point. The x-coordinate is hashed to seed the stream cipher.</td>
+        </tr>
+        <tr>
+          <td><b>C2 = M &oplus; KS</b></td>
+          <td>Alice &rarr; Bob</td>
+          <td><span class="table-badge badge-indigo">Payload</span></td>
+          <td>Second component of ciphertext: plaintext XORed with SHA-256 keystream.</td>
+        </tr>
       </table>
     </div>
 
-    <div class="card card-callout">
-      <b>Key takeaway:</b> Checksums and encodings give neither confidentiality nor authenticity. A hash is not encryption (it cannot be decrypted) and it is not a signature.
-    </div>
-
-    <!-- SECTION 4: HISTORICAL CONTEXT & SVG TIMELINE -->
-    <h2><span class="n">4</span> Historical context</h2>
     <div class="card">
-      <p style="margin-top:0">
-        <b>Foundations date from 1977 and 2001; wallet standards came in 2012–2016.</b>
-        The chronological timeline below illustrates the 7 key milestones to scale:
-      </p>
-
-      <!-- SVG TIMELINE GRAPH -->
-      <div class="svg-container">
-        <svg viewBox="0 0 860 320" role="img" aria-label="Historical timeline of cryptographic primitives and wallet standards">
-          <!-- Time Grid -->
-          <line x1="80" y1="230" x2="800" y2="230" stroke="#cbd5e1" stroke-width="2"/>
-          
-          <!-- Decade ticks & labels (1975 to 2020: 800-80 = 720px for 45 years -> 16px/year) -->
-          <!-- 1975=80, 1980=160, 1990=320, 2000=480, 2010=640, 2020=800 -->
-          <line x1="80" y1="230" x2="80" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
-          <text x="80" y="254" font-size="11" text-anchor="middle" fill="#64748b">1975</text>
-
-          <line x1="160" y1="230" x2="160" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
-          <text x="160" y="254" font-size="11" text-anchor="middle" fill="#64748b">1980</text>
-
-          <line x1="320" y1="230" x2="320" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
-          <text x="320" y="254" font-size="11" text-anchor="middle" fill="#64748b">1990</text>
-
-          <line x1="480" y1="230" x2="480" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
-          <text x="480" y="254" font-size="11" text-anchor="middle" fill="#64748b">2000</text>
-
-          <line x1="640" y1="230" x2="640" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
-          <text x="640" y="254" font-size="11" text-anchor="middle" fill="#64748b">2010</text>
-
-          <line x1="800" y1="230" x2="800" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
-          <text x="800" y="254" font-size="11" text-anchor="middle" fill="#64748b">2020</text>
-
-          <!-- Vertical guide grid lines -->
-          <line x1="160" y1="40" x2="160" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-          <line x1="320" y1="40" x2="320" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-          <line x1="480" y1="40" x2="480" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-          <line x1="640" y1="40" x2="640" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-
-          <!-- 1. 1977: RSA (pos = 80 + 2*16 = 112) -->
-          <line x1="112" y1="70" x2="112" y2="230" stroke="#e8472b" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="112" cy="70" r="6" fill="#e8472b"/>
-          <rect x="70" y="44" width="84" height="22" rx="4" fill="#fee2e2" stroke="#e8472b"/>
-          <text x="112" y="59" font-size="10.5" font-weight="700" text-anchor="middle" fill="#b91c1c">RSA (1977)</text>
-
-          <!-- 2. 2001: SHA-2 / SHA-512 (pos = 480 + 1*16 = 496) -->
-          <line x1="496" y1="95" x2="496" y2="230" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="496" cy="95" r="6" fill="#10b981"/>
-          <rect x="430" y="70" width="132" height="22" rx="4" fill="#d1fae5" stroke="#10b981"/>
-          <text x="496" y="85" font-size="10" font-weight="700" text-anchor="middle" fill="#047857">SHA-2/512 (2001)</text>
-
-          <!-- 3. 2012: BIP-32 (pos = 640 + 2*16 = 672) -->
-          <line x1="672" y1="60" x2="672" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="672" cy="60" r="6" fill="#3b82f6"/>
-          <rect x="625" y="36" width="94" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
-          <text x="672" y="50" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-32 (2012)</text>
-
-          <!-- 4. 2013: BIP-39 (pos = 640 + 3*16 = 688) -->
-          <line x1="688" y1="105" x2="688" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="688" cy="105" r="6" fill="#3b82f6"/>
-          <rect x="642" y="82" width="92" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
-          <text x="688" y="96" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-39 (2013)</text>
-
-          <!-- 5. 2014: BIP-44 (pos = 640 + 4*16 = 704) -->
-          <line x1="704" y1="150" x2="704" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="704" cy="150" r="6" fill="#3b82f6"/>
-          <rect x="658" y="128" width="92" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
-          <text x="704" y="142" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-44 (2014)</text>
-
-          <!-- 6. 2015: SHA-3 / Keccak (pos = 640 + 5*16 = 720) -->
-          <line x1="720" y1="50" x2="720" y2="230" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="720" cy="50" r="6" fill="#10b981"/>
-          <rect x="675" y="26" width="90" height="20" rx="4" fill="#d1fae5" stroke="#10b981"/>
-          <text x="720" y="40" font-size="9.5" font-weight="700" text-anchor="middle" fill="#047857">Keccak (2015)</text>
-
-          <!-- 7. 2016: EIP-55 (pos = 640 + 6*16 = 736) -->
-          <line x1="736" y1="95" x2="736" y2="230" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="736" cy="95" r="6" fill="#7c3aed"/>
-          <rect x="695" y="72" width="82" height="20" rx="4" fill="#ede9fe" stroke="#7c3aed"/>
-          <text x="736" y="86" font-size="9.5" font-weight="700" text-anchor="middle" fill="#6d28d9">EIP-55 (2016)</text>
-
-          <!-- LEGEND -->
-          <g transform="translate(140, 285)">
-            <circle cx="0" cy="0" r="5" fill="#e8472b"/>
-            <text x="10" y="4" font-size="11" fill="#475569">Public-key crypto</text>
-
-            <circle cx="150" cy="0" r="5" fill="#10b981"/>
-            <text x="160" y="4" font-size="11" fill="#475569">Hash functions</text>
-
-            <circle cx="280" cy="0" r="5" fill="#3b82f6"/>
-            <text x="290" y="4" font-size="11" fill="#475569">Wallet standards (BIP)</text>
-
-            <circle cx="440" cy="0" r="5" fill="#7c3aed"/>
-            <text x="450" y="4" font-size="11" fill="#475569">Checksum (EIP)</text>
-          </g>
-        </svg>
+      <div class="row">
+        <button id="b1">1. Generate Bob's Keypair</button>
+        <button id="b2">2. Encrypt Message (Alice)</button>
+        <button id="b3">3. Decrypt Ciphertext (Bob)</button>
       </div>
-
-      <p class="mut" style="text-align:center; margin-top:2px;">timeline · 7 milestones, 1977 to 2016, to scale</p>
-
-      <p><b>Colours match the pipeline picture.</b> SHA-512 (part of SHA-2) is used inside BIP-39 and BIP-32, and Keccak won the NIST competition in 2012 before becoming SHA-3.</p>
-      <p style="margin-bottom:0"><b>The logical order is:</b> basic cryptographic tools first (RSA, SHA-2), then the key-management standards born in Bitcoin (BIP), then Ethereum-specific choices (Keccak-256, EIP-55). Ethereum launched in 2015, before the final SHA-3 standard, and adopted the earlier Keccak version. It also inherited the secp256k1 curve from Bitcoin.</p>
+      <div id="eccout">Click "Generate Bob's Keypair" to initialize parameters...</div>
     </div>
 
-    <!-- SECTION 5: SHA-2 / SHA-512 VS KECCAK / SHA-3 -->
-    <h2><span class="n">5</span> SHA-2 / SHA-512 versus Keccak / SHA-3</h2>
+    <!-- SEZIONE 2: CAESAR CIPHER -->
+    <h2><span class="n">2</span> The Caesar cipher</h2>
     <div class="card">
-      <p style="margin-top:0">
-        Both are cryptographic hash families, but their internal designs are unrelated. <b>SHA-2 (2001)</b> uses the <i>Merkle–Damgård construction</i>. <b>SHA-3</b> is based on Keccak, which uses the <i>sponge construction</i>, and was chosen as an independent alternative in case SHA-2 were ever weakened.
-      </p>
+      <b>Classical Monoalphabetic Substitution.</b> The Caesar cipher shifts every alphabet character by a constant
+      offset <b>s &isin; {0, &hellip;, 25}</b> modulo 26:
+      <div class="callout-academic" style="margin:10px 0;">
+        <b>Encryption:</b> <code>C<sub>i</sub> = (P<sub>i</sub> + s) mod 26</code> &nbsp;|&nbsp;
+        <b>Decryption:</b> <code>P<sub>i</sub> = (C<sub>i</sub> &minus; s) mod 26</code>
+      </div>
+      Non-alphabetical characters (spaces, punctuation) are preserved in the clear.
+    </div>
 
-      <p>
-        Ethereum uses <b>Keccak-256</b>, which is <b>not identical to SHA3-256</b>. During standardization NIST changed the domain-separation and padding rule (SHA3 appends the bits <code>01</code> before padding; original Keccak does not). The internal permutation is identical, but the final outputs completely differ:
-      </p>
+    <div class="row">
+      <label>Shift offset s: <input id="shift" type="number" min="0" max="25" value="3"
+          style="width:80px; font-weight:700;"></label>
+    </div>
 
-      <div class="wrap" style="margin: 14px 0;">
-        <table>
+    <div class="card">
+      <div class="mut">Standard Alphabet:</div>
+      <div class="alpha" id="al1"></div>
+      <div class="mut">Shifted Alphabet (s positions ahead):</div>
+      <div class="alpha" id="al2"></div>
+      <div id="cout" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- BITSTREAM WORKBENCH: LIVE INSPECTION -->
+    <div class="card">
+      <h3 style="margin-top:0;">🔍 Bitstream & Symbol Workbench: Why Caesar Leaks Structure</h3>
+      <p style="margin:0 0 10px;" class="mut">
+        Compare the character-by-character transformation below for the message <code id="wbMsg">MEET ME AT NOON</code>.
+        Notice how in Caesar, repeated characters (like 'E' at index 1 and 2) always produce identical ciphertext
+        characters ('H' and 'H'). In the Toy ECC scheme, the SHA-256 keystream bytes are distinct at every index,
+        completely diffusing character repetitions.
+      </p>
+      <div class="wrap">
+        <table id="wbTable">
           <thead>
             <tr>
-              <th style="width: 25%;">Function</th>
-              <th>Hash of the empty string (ASCII "")</th>
+              <th>Index</th>
+              <th>Char</th>
+              <th>ASCII (Hex)</th>
+              <th>Caesar (Shift s)</th>
+              <th>Caesar Leakage</th>
+              <th>Toy ECC Keystream</th>
+              <th>Toy ECC Cipher Byte (C2)</th>
+              <th>ECC Diffusion</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="wbBody">
             <tr>
-              <td><b>Keccak-256 (Ethereum)</b></td>
-              <td><code>c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470</code></td>
-            </tr>
-            <tr>
-              <td><b>SHA3-256 (NIST)</b></td>
-              <td><code>a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a</code></td>
+              <td colspan="8" class="mut">Loading live bitstream data...</td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <p class="mut" style="margin-bottom:0">
-        <b>Critical consequence:</b> In practice, using SHA3-256 instead of Keccak-256 produces completely wrong Ethereum addresses.
-      </p>
     </div>
 
-    <!-- SECTION 6: WHY SEVERAL PRIMITIVES INSTEAD OF ONE? -->
-    <h2><span class="n">6</span> Why several primitives instead of one?</h2>
-    <div class="card">
-      <p style="margin-top:0">Each tool in the pipeline has a specific mathematical specialty:</p>
-      <ul style="padding-left: 20px; margin-bottom: 16px;">
-        <li><b>BIP-39 / BIP-32 / BIP-44 → key management:</b> one backup, an ordered key tree, compatibility across wallets.</li>
-        <li><b>secp256k1 → private/public relation and signatures:</b> needs rich algebraic group structure that allows public verification, which a hash cannot offer.</li>
-        <li><b>Keccak-256 → hashing:</b> compresses the 64-byte public key into 20 uniform, scrambled bytes.</li>
-        <li><b>EIP-55 → error detection:</b> adds no extra length (still 40 characters) and is fully backwards-compatible with lowercase addresses.</li>
-      </ul>
-      <p class="card-callout card" style="margin:0;">
-        <b>Separation of Roles Principle:</b> Every primitive is optimized for one task, can be analyzed and audited independently, and a weakness in one layer stays confined to that layer.
-      </p>
-    </div>
-
-    <!-- SECTION 7: STATISTICAL PROPERTIES -->
-    <h2><span class="n">7</span> Statistical properties</h2>
-    <div class="card">
-      <ul style="padding-left: 20px; margin: 0;">
-        <li><b>Hash functions (Keccak, SHA-2):</b> <i>Avalanche effect</i> (about 50% of output bits flip when one input bit changes), output indistinguishable from uniform, no visible correlation between input and output. Two very similar public keys produce completely unrelated addresses.</li>
-        <li style="margin-top: 10px;"><b>secp256k1:</b> <i>Not a hash.</i> The relation <code>(k+1)G = kG + G</code> is strictly algebraic; security comes solely from the hardness of the ECDLP, not from scrambling bits (as explored in HMWK 1).</li>
-        <li style="margin-top: 10px;"><b>Mnemonic and seed:</b> Security depends strictly on the entropy: 128 bits for 12 words (2¹²⁸ possibilities). The 512-bit seed adds no extra entropy beyond the original phrase.</li>
-        <li style="margin-top: 10px;"><b>EIP-55:</b> The capitalization pattern is a pseudo-random sample of hash bits, so each letter has an independent ~1/2 probability of being uppercase.</li>
-      </ul>
-    </div>
-
-    <!-- SECTION 8: HANDS-ON TEST WITH A WALLET -->
-    <h2><span class="n">8</span> Hands-on test with a wallet</h2>
-    <div class="card">
-      <p style="margin-top:0">
-        Use a throwaway wallet with no funds, never your real recovery phrase. A public test mnemonic used by the Hardhat development tool is:
-      </p>
-      <div class="hex-display" style="font-weight:700; color:#1e1b4b;">
-        test test test test test test test test test test test junk
-      </div>
-      <p>
-        Importing it into MetaMask, Rabby or a similar wallet gives the first account (path <code>m/44'/60'/0'/0/0</code>):<br>
-        <code>0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</code>, which already exhibits the EIP-55 capitalization.
-      </p>
-      <b>Steps to document with screenshots:</b>
-      <ol style="padding-left: 20px; margin-bottom: 6px;">
-        <li>Create the wallet and show the recovery words (BIP-39).</li>
-        <li>Add a second account: same phrase, a different address (derivation index +1, BIP-44).</li>
-        <li>Import the same phrase into another wallet and check that the addresses match.</li>
-        <li>Copy an address, change one letter, and check whether the wallet complains (EIP-55).</li>
-      </ol>
-      <p class="mut" style="margin-bottom:0">⚠️ The test mnemonic is public, so never send real funds to it.</p>
-    </div>
-
-    <!-- SECTION 9: PUTTING IT ALL TOGETHER -->
-    <h2><span class="n">9</span> Putting it all together: a complete worked example</h2>
-    <div class="card">
-      <p style="margin-top:0">
-        We run the whole pipeline on the public test mnemonic from section 8. Every value below was computed with a short script, and the final address is the well-known address of this test account:
-      </p>
-
-      <!-- STEP 0 -->
-      <div class="step-box step-0">
-        <div class="step-box-header">
-          <b>Step 0: Starting point (key generation)</b>
-          <span class="step-badge badge-sky">Entropy</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">In a real wallet entropy is random; here the phrase is fixed so the example is repeatable.</p>
-        <div class="hex-display">test test test test test test test test test test test junk</div>
-      </div>
-
-      <!-- STEP 1 -->
-      <div class="step-box step-1">
-        <div class="step-box-header">
-          <b>Step 1: BIP-39, words to seed (derivation)</b>
-          <span class="step-badge badge-indigo">PBKDF2-HMAC-SHA512</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">PBKDF2 with mnemonic as password, salt "mnemonic", 2048 iterations (64 bytes):</p>
-        <div class="hex-display">9dfc3c64c2f8bede1533b6a79f8570e5943e0b8fd1cf77107adf7b72cef42185d564a3aee24cab43f80e3c4538087d70fc824eabbad596a23c97b6ee8322ccc0</div>
-      </div>
-
-      <!-- STEP 2 -->
-      <div class="step-box step-2">
-        <div class="step-box-header">
-          <b>Step 2: BIP-32, seed to master key (derivation)</b>
-          <span class="step-badge badge-purple">HMAC-SHA512</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">HMAC-SHA512 with key "Bitcoin seed". Left 32 bytes = master key, right 32 bytes = chain code:</p>
-        <div class="hex-display">master key: ada5f7928ef8f684afa7b06929b5d1f653e486b52077ba9d798eded96c851ade<br>chain code: a6001a33d7f033eb872b5e95587fe2053a2df53d546ba932637f2ab7a8cff940</div>
-      </div>
-
-      <!-- STEP 3 -->
-      <div class="step-box step-3">
-        <div class="step-box-header">
-          <b>Step 3: BIP-44, follow path m/44'/60'/0'/0/0 (derivation)</b>
-          <span class="step-badge badge-rose">Child Derivation</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">Five child derivations (first three hardened). Produces the Ethereum private key:</p>
-        <div class="hex-display">ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</div>
-      </div>
-
-      <!-- STEP 4 -->
-      <div class="step-box step-4">
-        <div class="step-box-header">
-          <b>Step 4: secp256k1, private key to public key (cryptography)</b>
-          <span class="step-badge badge-amber">Q = k · G</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">Elliptic curve point multiplication Q = k·G with 256-bit arithmetic:</p>
-        <div class="hex-display">x = 8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75<br>y = 3547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5</div>
-      </div>
-
-      <!-- STEP 5 -->
-      <div class="step-box step-5">
-        <div class="step-box-header">
-          <b>Step 5: Keccak-256, public key to address (hashing)</b>
-          <span class="step-badge badge-orange">Keccak-256 Truncation</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">Hash 64 bytes (x ‖ y), keep the last 20 bytes (last 40 hex characters):</p>
-        <div class="hex-display">Keccak-256: c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb92266<br>address:    f39fd6e51aad88f6f4ce6ab8827279cfffb92266</div>
-      </div>
-
-      <!-- STEP 6 -->
-      <div class="step-box step-6">
-        <div class="step-box-header">
-          <b>Step 6: EIP-55, add checksum (error detection)</b>
-          <span class="step-badge badge-emerald">EIP-55 Capitalization</span>
-        </div>
-        <p class="mut" style="margin:0 0 6px">
-          Keccak-256 hash of lowercase address. For each letter a–f: if matching hash digit ≥ 8 → uppercase:
-        </p>
-        <div class="hex-display">hash:   19682d67812181b19d61f09263ab9e723b258d8d7949f68794d8916171bea91d<br>result: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</div>
-
-        <!-- INTERACTIVE EIP-55 LETTER-BY-LETTER INSPECTOR -->
-        <h4 style="margin: 16px 0 6px; font-size: 0.95rem;">Interactive EIP-55 character mapping:</h4>
-        <div class="eip-breakdown" id="eipBreakdown"></div>
-        <div class="eip-legend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
-          <span class="table-badge badge-emerald">Uppercase (hash nibble ≥ 8)</span>
-          <span class="table-badge badge-sky">Lowercase (hash nibble &lt; 8)</span>
-          <span class="table-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">Digit (0–9 unchanged)</span>
-        </div>
-      </div>
-
-      <!-- INTERACTIVE AVALANCHE EFFECT DEMO -->
-      <h3>Avalanche in action: 1-bit private key change</h3>
-      <div class="avalanche-container">
-        <p style="margin-top:0">
-          Change the private key by <b>just one unit</b> (last digits <code>...ff80</code> become <code>...ff81</code>):
-        </p>
-        <div class="hex-display">
-          Key A (...ff80): 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266<br>
-          Key B (...ff81): 0xdd11751cdd3f6eff01b1f6151b640685bfa5db4a
-        </div>
-        <div style="display:inline-flex; align-items:center; gap:8px; margin: 6px 0 10px;">
-          <span class="table-badge badge-rose" style="font-size:0.9rem; padding:5px 12px;">53.1% Bit Difference (85/160 bits flipped)</span>
-          <span class="table-badge badge-indigo">Avalanche Effect</span>
-        </div>
-        <div class="bit-diff-bar">
-          <div class="bit-diff-fill" style="width: 53.1%;"></div>
-          <div class="bit-diff-ideal"></div>
-        </div>
-        <div class="bit-diff-labels">
-          <span>0 bits flipped</span>
-          <span style="font-weight:700; color:var(--hi);">Ideal: 50% (80 bits)</span>
-          <span>160 bits flipped</span>
-        </div>
-        <p style="margin: 10px 0 0; font-size: 0.92rem;">
-          <b>Result:</b> <b>85 of the 160 address bits differ (53.1%)</b>, remarkably close to the ideal 50% avalanche effect of a cryptographic hash function! Inside secp256k1 alone the relation (k+1)G = kG + G is visible; the Keccak-256 hash completely hides it.
-        </p>
-      </div>
-
-      <div class="card card-callout" style="margin-top:16px;">
-        <b>Key Observations from the Example:</b>
-        <ol style="padding-left: 20px; margin: 6px 0 0;">
-          <li><b>One random choice, then only deterministic steps.</b> Randomness is only in step 0; steps 1 to 6 are derivation, curve math, hashing and checksum.</li>
-          <li><b>Avalanche in action:</b> 53.1% bit difference hides algebraic curve relationships.</li>
-          <li><b>Keccak-256 ≠ SHA3-256:</b> Hashing the same public key with NIST SHA3-256 gives <code>8ed30a8892bc3cb25ca6b52d045b51f176f55913</code>, a completely wrong address.</li>
-          <li><b>Everything moves forward only,</b> except the checksum which can be reversed simply by lowercasing.</li>
-        </ol>
-      </div>
-    </div>
-
-    <!-- SECTION 10: SUMMARY & REVERSIBILITY ANALYSIS -->
-    <h2><span class="n">10</span> Conclusion</h2>
-    <div class="card wrap" style="padding:0;">
+    <!-- SEZIONE 3: COMPARISON -->
+    <h2><span class="n">3</span> Comparison of the two schemes</h2>
+    <div class="wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Pipeline Step</th>
-            <th>Kind of primitive</th>
-            <th>Can it be reversed?</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><b>Phrase to seed (BIP-39)</b></td>
-            <td>Derivation built on a hash (PBKDF2)</td>
-            <td><span class="table-badge badge-no">Not in practice</span> (2048 rounds of HMAC-SHA512)</td>
-          </tr>
-          <tr>
-            <td><b>Seed to private key (BIP-32, BIP-44)</b></td>
-            <td>Derivation built on a hash (HMAC)</td>
-            <td><span class="table-badge badge-no">Not in practice</span> (HMAC-SHA512 one-wayness)</td>
-          </tr>
-          <tr>
-            <td><b>Private key to public key</b></td>
-            <td>Public-key cryptography (secp256k1)</td>
-            <td><span class="table-badge badge-no">No</span> (needs ECDLP, infeasible at 256 bits)</td>
-          </tr>
-          <tr>
-            <td><b>Public key to address</b></td>
-            <td>Hash (Keccak-256)</td>
-            <td><span class="table-badge badge-no">No</span> (pre-image resistant; 12 bytes thrown away)</td>
-          </tr>
-          <tr>
-            <td><b>Address to checksummed address</b></td>
-            <td>Checksum over an encoding (EIP-55)</td>
-            <td><span class="table-badge badge-yes">Yes</span> (just convert to lowercase)</td>
-          </tr>
-        </tbody>
+        <tr>
+          <th>Attribute</th>
+          <th>Caesar Cipher</th>
+          <th>Toy ECC Scheme (secp256k1)</th>
+          <th>Production ECIES (secp256k1 + AES-GCM)</th>
+        </tr>
+        <tr>
+          <td><b>Paradigm</b></td>
+          <td>Symmetric monoalphabetic substitution</td>
+          <td>Asymmetric Diffie-Hellman + XOR stream cipher</td>
+          <td>Asymmetric KEM + Authenticated Symmetric Encryption (AEAD)</td>
+        </tr>
+        <tr>
+          <td><b>Key Space | Entropy</b></td>
+          <td>26 keys &approx; <b>4.7 bits</b></td>
+          <td>2<sup>bits</sup> (16&ndash;32 bits here)</td>
+          <td>&approx; 2<sup>256</sup> keys &rarr; <b>128-bit security</b> level</td>
+        </tr>
+        <tr>
+          <td><b>Encryption Procedure</b></td>
+          <td>Rigid cyclic shift of 26 glyphs</td>
+          <td>Point multiplication + SHA-256 derivation + XOR</td>
+          <td>ECDH scalar mult + HKDF derivation + AES-256-GCM</td>
+        </tr>
+        <tr>
+          <td><b>Plaintext Redundancy</b></td>
+          <td><span class="table-badge badge-rose">Completely Preserved</span> (only shifted)</td>
+          <td><span class="table-badge badge-emerald">Completely Hidden</span> (statistically uniform bytes)</td>
+          <td><span class="table-badge badge-emerald">Completely Hidden</span> (IND-CCA2 secure)</td>
+        </tr>
+        <tr>
+          <td><b>Data Integrity / MAC</b></td>
+          <td><span class="table-badge badge-gray">None</span> (Malleable)</td>
+          <td><span class="table-badge badge-rose">None</span> (Malleable under bit-flipping)</td>
+          <td><span class="table-badge badge-emerald">Enforced</span> (128-bit GMAC authentication tag)</td>
+        </tr>
+        <tr>
+          <td><b>Ciphertext Entropy</b></td>
+          <td>Identical to language (&approx; 4.15 bits/char)</td>
+          <td>Maximally flat (&approx; 8.00 bits/byte)</td>
+          <td>Maximally flat (&approx; 8.00 bits/byte)</td>
+        </tr>
       </table>
     </div>
 
     <div class="card">
-      <p style="margin-top:0">
-        <b>This is why the 12 words restore every account, while nobody can go from an address back to the phrase.</b>
-        One random choice, five one-way steps and a checksum that only protects against typos.
+      <b>Core Mathematical Divergence:</b>
+      <ul>
+        <li><b>Caesar:</b> Uses a <i>constant</i> shift scalar across the entire text stream. Because <code
+            class="mono">C<sub>i</sub> = P<sub>i</sub> + s</code>, any language property <code
+            class="mono">P<sub>i</sub> = P<sub>j</sub></code> guarantees <code
+            class="mono">C<sub>i</sub> = C<sub>j</sub></code>. The probability distribution of the ciphertext is an
+          exact rigid rotation of the language histogram.</li>
+        <li><b>Toy ECC:</b> Employs an elliptic curve one-way trapdoor to securely agree on a 256-bit point, from which
+          a cryptographically strong pseudo-random keystream is derived using SHA-256. Each byte position receives an
+          uncorrelated, unpredictable mask byte, which destroys character-frequency signatures, n-grams, and word
+          boundaries.</li>
+      </ul>
+      <div class="row">
+        <button id="b4">Measure Statistics on 1,300-Char Test Text</button>
+      </div>
+      <div id="statout"></div>
+    </div>
+
+    <!-- SEZIONE 4: STATISTICAL CRYPTANALYSIS OF CAESAR -->
+    <h2><span class="n">4</span> Statistical cryptanalysis of the Caesar cipher</h2>
+    <div class="card">
+      <b>Theoretical Foundation: Language Redundancy & Unicity Distance.</b>
+      Natural languages are heavily redundant (English redundancy &approx; 75%). In a monoalphabetic substitution
+      cipher, this redundancy survives entirely in the ciphertext. Shannon established that the <b>unicity distance</b>
+      (the minimum ciphertext length needed to identify the encryption key uniquely) for a cipher with key space <code
+        class="mono">|K| = 26</code> is:
+      <div class="callout-academic">
+        <code>U &approx; H(K) / D &approx; log<sub>2</sub>(26) / (R<sub>L</sub> &middot; log<sub>2</sub>(26)) &approx; 4.70 / (0.75 &times; 4.70) &approx; 1.33 words (&approx; 20&ndash;30 characters)</code>
+      </div>
+      Below this threshold, multiple keys produce plausible-looking English fragments. Above this threshold, statistical
+      tests single out the true key with overwhelming probability.
+    </div>
+
+    <!-- REFERENCE CORPUS SELECTOR (GENUINE TEXTS, NO CLAUDE HALLMARKS) -->
+    <div class="card">
+      <b>Reference Language Model & Training Corpus:</b>
+      <p class="mut" style="margin:4px 0 8px;">Select a literary or scientific corpus to compute reference monogram and
+        bigram log-probabilities:</p>
+
+      <div class="corpus-picker">
+        <button class="corpus-btn active" id="btnCorp1" onclick="setCorpusPreset(0)">Mary Shelley – Frankenstein
+          (1818)</button>
+        <button class="corpus-btn" id="btnCorp2" onclick="setCorpusPreset(1)">Claude Shannon – Secrecy Systems
+          (1949)</button>
+        <button class="corpus-btn" id="btnCorp3" onclick="setCorpusPreset(2)">Conan Doyle – The Sign of the Four
+          (1890)</button>
+      </div>
+
+      <textarea id="corpus" rows="6"></textarea>
+      <div id="refchart"></div>
+    </div>
+
+    <div class="card">
+      <b>Comparison of Cryptanalytic Decision Rules:</b>
+      <div class="wrap" style="margin-top:10px;">
+        <table>
+          <tr>
+            <th>Rule / Method</th>
+            <th>Algorithmic Mechanism</th>
+            <th>Strengths & Vulnerabilities</th>
+          </tr>
+          <tr>
+            <td><b>1. Most Frequent Letter</b></td>
+            <td>Identifies the peak ciphertext frequency symbol and aligns it with language peak 'E' (<code
+                class="mono">s = (peak - 4) mod 26</code>).</td>
+            <td>Extremely fast, but fragile on short texts where 'T', 'A', or 'O' can randomly outnumber 'E'.</td>
+          </tr>
+          <tr>
+            <td><b>2. Chi-Square Goodness-of-Fit (&chi;²)</b></td>
+            <td>Calculates <code class="mono">&chi;²(s) = &sum; (O<sub>i</sub> - E<sub>i</sub>)² / E<sub>i</sub></code>
+              over all 26 letter frequencies simultaneously.</td>
+            <td>Robust against small deviations because all 26 letters contribute. Minimum score yields key.</td>
+          </tr>
+          <tr>
+            <td><b>3. Bigram Log-Likelihood (n=2)</b></td>
+            <td>Scores decryptions by summing <code class="mono">&sum; log P(c<sub>i</sub>, c<sub>i+1</sub>)</code> of
+              adjacent letter pairs from corpus model.</td>
+            <td>Captures syntactic grammar (e.g. TH, HE, IN, ER). Highest scoring decryption across short windows.</td>
+          </tr>
+          <tr>
+            <td><b>4. Dictionary Word Matching</b></td>
+            <td>Searches candidate decryptions for top English stop words (THE, AND, OF, TO, IN, IS, THAT, FOR...).</td>
+            <td>Infallible when spaces are present; completely useless if spaces are stripped or corrupted.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <b>Interactive Key Recovery from Intercepted Ciphertext:</b>
+      <p class="mut" style="margin:4px 0 8px;">Test the 4 algorithms on any sample ciphertext (default encrypted with
+        shift <code class="mono">s = 11</code>):</p>
+      <textarea id="ct" rows="3"></textarea>
+      <div class="row">
+        <button id="b5">Recover Key & Decrypt</button>
+      </div>
+      <div id="recout"></div>
+    </div>
+
+    <div class="card">
+      <b>Empirical Benchmark: Accuracy vs. Ciphertext Length:</b>
+      <p class="mut" style="margin:4px 0 8px;">
+        Evaluates 300 random message windows sampled from a completely held-out text (H.G. Wells, <i>The Time
+          Machine</i>, not included in the training corpus), encrypted with random secret keys <code
+          class="mono">s &isin; [1, 25]</code>:
       </p>
-      <p style="margin-bottom:0">
-        <b>Conclusion:</b> The worked example above ran the whole chain on real values. The pipeline combines primitives with different roles: deterministic key derivation (BIP), public-key cryptography (secp256k1), hashing (Keccak-256) and a checksum (EIP-55). Keeping generation, derivation, hashing, checksums and encoding separate avoids common confusions. Desirable statistical properties such as avalanche and uniformity belong to hash functions, while public-key cryptography relies on hard mathematical problems.
+      <details>
+        <summary>Inspect held-out validation text (independent evaluation sample)</summary>
+        <p class="mut" id="testtxt" style="margin-top:8px; line-height:1.6;"></p>
+      </details>
+      <div class="row">
+        <button id="b6">Run Length Benchmark Simulation</button>
+      </div>
+      <div id="expout"></div>
+    </div>
+
+    <div class="card">
+      <b>Summary of Empirical Limitations:</b>
+      <ul>
+        <li><b>Sample Size Noise:</b> Under 15 letters, statistical variance overwhelms the distribution. Several
+          candidate keys produce indistinguishable &chi;² values.</li>
+        <li><b>Threshold of Reliability:</b> Between 30 and 40 letters, bigram scoring and &chi;² reach &gt;95%
+          accuracy, verifying Shannon's unicity distance theorem.</li>
+        <li><b>Language Specificity:</b> Attacking an Italian or French ciphertext with an English training profile
+          results in catastrophic key misclassification.</li>
+      </ul>
+    </div>
+
+    <!-- SEZIONE 5: ATTACK ON TOY ECC -->
+    <h2><span class="n">5</span> Attack on the toy ECC scheme</h2>
+    <div class="card">
+      <b>Algebraic Nature of the Attack.</b>
+      Unlike the statistical attack against Caesar (which requires linguistic redundancy), the attack on the restricted
+      ECC scheme is <b>purely algebraic</b>. The adversary inspects Bob's public key <b>Q</b> and knows that <b>k &isin;
+        [1, 2<sup>bits</sup>]</b>. For each candidate scalar <i>k'</i>, the attacker computes <i>k'·G</i> on secp256k1
+      and checks for exact point equality with <i>Q</i>.
+      <br><br>
+      A match provides <b>100% mathematical certainty</b>. With <i>k</i> recovered, the attacker computes <code
+        class="mono">S = k·C1</code>, derives the SHA-256 keystream, and decrypts <i>C2</i> immediately.
+    </div>
+
+    <div class="row">
+      <button id="b7">1. Run Exhaustive Search (Brute Force)</button>
+      <button id="b8">2. Run Baby-Step Giant-Step (BSGS)</button>
+    </div>
+
+    <div class="pb">
+      <div id="pbar"></div>
+    </div>
+    <div id="atk"></div>
+
+    <div class="card">
+      <b>Algorithmic Comparison: Exhaustive Search vs. BSGS:</b>
+      <div class="wrap" style="margin-top:10px;">
+        <table>
+          <tr>
+            <th>Algorithm</th>
+            <th>Time Complexity</th>
+            <th>Space Complexity</th>
+            <th>Operational Principle</th>
+          </tr>
+          <tr>
+            <td><b>Exhaustive Search</b></td>
+            <td><code>O(K)</code> point additions</td>
+            <td><code>O(1)</code> memory</td>
+            <td>Sequentially computes <code>G, 2G, 3G, &hellip;, k'G</code> using Jacobian point doublings/additions
+              until matching Q.</td>
+          </tr>
+          <tr>
+            <td><b>Baby-Step Giant-Step (BSGS)</b></td>
+            <td><code>O(&radic;K)</code> operations</td>
+            <td><code>O(&radic;K)</code> memory</td>
+            <td>Computes <code>m = &lceil;&radic;K&rceil;</code>. Precomputes table of baby steps <code>j·G</code> for
+              <code>j &isin; [0, m)</code>. Then computes giant steps <code>Q &minus; i·(mG)</code> until finding a
+              collision. Yields <code>k = i·m + j</code>.</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card wrap">
+      <b>Projected Cryptanalytic Feasibility: From Toy Parameters to Real secp256k1:</b>
+      <p class="mut" style="margin:4px 0 10px;">Projected from benchmarked Jacobian point-addition speeds measured
+        directly in your browser (<span id="speed">benchmarking...</span>):</p>
+      <table id="proj"></table>
+    </div>
+
+    <div class="card">
+      <b>Why This Attack Fails Completely on Full-Scale secp256k1:</b>
+      <ul>
+        <li><b>Immense Combinatorial Space:</b> A true secp256k1 private key is a 256-bit scalar chosen uniformly from
+          order <code class="mono">n &approx; 1.158 &times; 10<sup>77</sup></code>.</li>
+        <li><b>Square-Root Infeasibility:</b> The fastest known generic discrete logarithm solvers (Pollard's &rho;,
+          BSGS) require <code
+            class="mono">&radic;2<sup>256</sup> = 2<sup>128</sup> &approx; 3.4 &times; 10<sup>38</sup></code> group
+          operations.</li>
+        <li><b>Physical Thermodynamics & Energy Limits:</b> By Landauer's principle and Bremermann's computational
+          limit, expending the energy to perform 2<sup>128</sup> bit flips would require more power than the total
+          energy output of our Sun over millions of years. Real ECC is secure because of this computational
+          infeasibility.</li>
+      </ul>
+    </div>
+
+    <!-- OPTIONAL: OTHER ATTACKS & ARCHITECTURAL WEAKNESSES -->
+    <div class="card">
+      <h3 style="margin-top:0;">In-Depth: Alternative Attacks and Root-Cause Vulnerability Analysis</h3>
+
+      <h4 style="margin:12px 0 6px; color:var(--ac);">1. Vulnerabilities Arising from the Restricted Key Space</h4>
+      <ul>
+        <li>
+          <b>Pollard's Kangaroo (Lambda) Method for Bounded Intervals:</b>
+          When the private key is known to lie in a bounded window <code class="mono">[a, b]</code> of width <code
+            class="mono">W = b - a</code>, Pollard's kangaroo algorithm achieves the same <code
+            class="mono">O(&radic;W)</code> time complexity as BSGS, but requires <b>O(1) memory</b>! It deploys a
+          "tame" kangaroo and a "wild" kangaroo hopping pseudo-randomly along curve points until the wild kangaroo falls
+          into the tame kangaroo's trap (collision).
+        </li>
+        <li>
+          <b>Weak Ephemeral Nonce r:</b>
+          If Alice chooses her ephemeral scalar <i>r</i> from a restricted range (e.g. 20 bits) even while Bob's private
+          key <i>k</i> is a full 256-bit number, the entire scheme collapses! The attacker applies BSGS directly to
+          public point <code class="mono">C1 = r·G</code> to recover <i>r</i>, and then computes <code
+            class="mono">S = r·Q</code> to decrypt the payload, completely bypassing Bob's 256-bit security.
+        </li>
+      </ul>
+
+      <h4 style="margin:16px 0 6px; color:var(--hi);">2. Vulnerabilities Arising from the Toy Scheme's Architecture
+        (Even with 256-bit keys)</h4>
+      <ul>
+        <li>
+          <b>Lack of Message Authentication (Bit-Flipping Malleability):</b>
+          The toy scheme computes <code class="mono">C2 = M &oplus; Keystream</code> without a Message Authentication
+          Code (MAC). An attacker in the middle can flip bit <i>j</i> of <i>C2</i>; upon decryption, bit <i>j</i> of the
+          recovered plaintext is flipped with probability 1 (<code
+            class="mono">(C2 &oplus; &Delta;) &oplus; KS = M &oplus; &Delta;</code>). This violates Chosen-Ciphertext
+          Security (IND-CCA2). Production systems must use Authenticated Encryption (AEAD like AES-GCM or ECIES with
+          HMAC).
+        </li>
+        <li>
+          <b>Ephemeral Scalar Re-use (Two-Time Pad Catastrophe):</b>
+          If Alice reuses the same ephemeral scalar <i>r</i> for two distinct messages <code
+            class="mono">M<sub>1</sub></code> and <code class="mono">M<sub>2</sub></code>, the keystream is identical!
+          The attacker computes <code
+            class="mono">C2<sub>1</sub> &oplus; C2<sub>2</sub> = M<sub>1</sub> &oplus; M<sub>2</sub></code>, eliminating
+          the cryptographic key entirely and exposing the plaintexts to statistical crib-dragging.
+        </li>
+        <li>
+          <b>Missing Point Validation (Invalid Curve Attacks):</b>
+          The toy scheme does not verify whether received point <i>C1</i> satisfies the curve equation <code
+            class="mono">y² &equiv; x³ + 7 mod p</code> and has order <i>n</i>. An attacker can supply points on weak
+          curve twists with small prime factors, leaking Bob's private scalar modulo small primes via the Pohlig-Hellman
+          algorithm.
+        </li>
+        <li>
+          <b>Plaintext Length Leakage:</b>
+          Because stream ciphers encrypt byte-for-byte, the exact payload length is visible to eavesdroppers (<code
+            class="mono">|C2| = |M|</code>).
+        </li>
+      </ul>
+    </div>
+
+    <!-- SEZIONE 6: CONCLUSIONE -->
+    <h2><span class="n">6</span> Synthesis and conclusions</h2>
+    <div class="card">
+      <p style="margin:0;">
+        This laboratory work demonstrates the fundamental contrast in modern cryptology:
+        <br><br>
+        1. <b>Statistical vs. Algebraic Security:</b> The Caesar cipher fails because it leaves the structural
+        fingerprint of the source language completely intact. A small sample of letters is sufficient to recover the
+        secret offset through statistical correlation. The toy ECC scheme successfully conceals all statistical language
+        patterns, producing a byte stream indistinguishable from true randomness.
+        <br><br>
+        2. <b>Computational Security:</b> The toy ECC scheme fails in our browser solely because we deliberately
+        artificially restricted the scalar exponent space. In a genuine deployment on <b>secp256k1</b>, the 256-bit
+        scalar order renders square-root and exhaustive attacks physically impossible. However, true production security
+        also demands <b>authenticated encryption (AEAD)</b>, proper <b>public point validation</b>, and
+        <b>cryptographically fresh nonces</b> to prevent protocol-level malleability attacks.
       </p>
     </div>
 
@@ -580,37 +531,512 @@
     <footer>
       <p>
         <b>Statistics & Cryptography Portfolio</b> · Diana Buffo<br>
-        <a href="index.html" style="color:var(--ac); text-decoration:none; font-weight:600;">← Return to Home</a> · 
-        <a href="homework1.html" style="color:var(--ac); text-decoration:none; font-weight:600;">View Homework 1 →</a>
+        <a href="index.html">← Return to Home</a> ·
+        <a href="homework1-pt1.html">Homework 1 pt.1</a> ·
+        <a href="homework1-pt2.html">Homework 1 pt.2</a>
       </p>
     </footer>
   </main>
 
   <script>
-    // SCRIPT PER GENERARE LA VISUALIZZAZIONE INTERATTIVA DEI CARATTERI EIP-55
-    const address = "f39fd6e51aad88f6f4ce6ab8827279cfffb92266";
-    const hash = "19682d67812181b19d61f09263ab9e723b258d8d7949f68794d8916171bea91d";
-    const container = document.getElementById("eipBreakdown");
+    const $ = id => document.getElementById(id), sleep = () => new Promise(r => setTimeout(r));
 
-    if (container) {
-      let html = "";
-      for (let i = 0; i < address.length; i++) {
-        const char = address[i];
-        const hashDigit = hash[i];
-        const val = parseInt(hashDigit, 16);
-        const isLetter = /[a-f]/.test(char);
-        const isUpper = isLetter && val >= 8;
-        const isDigit = /[0-9]/.test(char);
-        const displayChar = isUpper ? char.toUpperCase() : char;
-        const typeClass = isUpper ? 'upper' : (isDigit ? 'digit' : 'lower');
+    /* ---------- AUTHENTIC CORPORA PRESETS (NO CLAUDE HALLMARKS) ---------- */
+    const CORPORA = [
+      // 0: Mary Shelley - Frankenstein (1818)
+      `Six years have passed since I resolved on my present undertaking. I can, even now, remember the hour from which I dedicated myself to this great enterprise. I commenced by inuring my body to hardship. I accompanied the whale-fishers on several expeditions to the North Sea; I voluntarily endured cold, famine, thirst, and want of sleep; I often worked harder than the common sailors during the day, and devoted my nights to the study of mathematics, the theory of medicine, and those branches of physical science from which a naval adventurer might derive the greatest practical advantage. Twice I actually hired myself as an under-mate in a Greenland whaler, and acquitted myself to admiration. I must own I felt a little proud when my captain offered me the second dignity in the vessel and entreated me to remain with the greatest earnestness, so valuable did he consider my services. And now, dear Margaret, do I not deserve to accomplish some great purpose? My life might have been passed in ease and luxury, but I preferred glory to every enticement that wealth placed in my path. Oh, that some encouraging voice would answer in the affirmative! My courage and my resolution are firm; but my hopes fluctuate, and my spirits are often depressed. I am about to proceed on a long and difficult voyage, the emergencies of which will demand all my fortitude: I am required not only to raise the spirits of others, but sometimes to sustain my own, when theirs are failing.`,
 
-        html += `<div class="eip-char-box ${typeClass}" title="Pos ${i}: char '${char}', hash nibble '${hashDigit}' (${val} ${isLetter ? (val >= 8 ? '>= 8 -> UPPERCASE' : '< 8 -> lowercase') : 'digit -> unchanged'})">
-          <span>${displayChar}</span>
-          <span class="hash-digit">${hashDigit}</span>
-        </div>`;
-      }
-      container.innerHTML = html;
+      // 1: Claude Shannon - Communication Theory of Secrecy Systems (1949)
+      `The problems of cryptography and secrecy systems furnish an interesting application of communication theory. In this paper a mathematical theory of cryptographic systems is developed. A secrecy system is defined abstractly as a set of uniquely reversible transformations of a set of possible messages into a set of possible cryptograms. The particular transformation chosen depends on a secret key known only to the transmitting and receiving parties. Two basic concepts in communication theory are information and redundancy. Redundancy in the source language enables a cryptanalyst to decipher messages without prior knowledge of the key. If the language has no redundancy, every sequence of letters is a meaningful message, and spurious decipherments cannot be distinguished from the true message. The unicity distance is the minimum length of ciphertext required so that only one meaningful decryption exists. For monoalphabetic substitution ciphers like the Caesar cipher, the unicity distance is very small, typically less than thirty letters, because the entropy of natural language is substantially lower than the maximum possible entropy of the alphabet. Thus, statistical cryptanalysis succeeds on relatively short intercepts.`,
+
+      // 2: Arthur Conan Doyle - The Sign of the Four (1890)
+      `Sherlock Holmes took his bottle from the corner of the mantelpiece and his hypodermic syringe from its neat morocco case. With his long, white, nervous fingers he adjusted the delicate needle, and rolled back his left shirt-cuff. For some little time his eyes rested thoughtfully upon the sinewy forearm and wrist all dotted and scarred with innumerable puncture-marks. Finally he thrust the sharp point home, pressed down the tiny piston, and sank back into the velvet-lined arm-chair with a long sigh of satisfaction. Three times a day for many months I had witnessed this performance, but my mind did not become reconciled to the spectacle. On the contrary, from day to day I had become more irritable at the sight, and my conscience swelled that I lacked the courage to protest. It was a bright, crisp morning in the early autumn, and the sunlight fell with a mellow radiance upon the rooftops of Baker Street. My friend leaned back with his fingertips together and smiled at my perplexity, explaining that the mind needs active employment to avoid stagnation and that observation and deduction constitute the essence of all true scientific inquiry.`
+    ];
+
+    // Held-out test corpus: H.G. Wells - The Time Machine (1895)
+    const TEST = `The Time Traveller was expounding a recondite matter to us. His grey eyes shone and twinkled, and his usually pale face was flushed and animated. The fire burnt brightly, and the soft radiance of the incandescent lights in the lilies of silver caught the bubbles that flashed and passed in our glasses. Our chairs embraced and caressed us rather than submitted to be sat upon, and there was that luxurious after-dinner atmosphere when thought roams gracefully free of the trammels of precision. And he put it to us in this way, marking the points upon a lean forefinger, as we sat and lazily admired his earnestness over this new paradox. You must follow me carefully, he said. I shall have to controvert one or two ideas that are almost universally accepted. The geometry, for instance, they taught you at school is founded on a misconception. Is not a point having no dimensions simply an imaginary entity? Nor has a line any real existence, nor a plane. They are pure abstractions. Scientific people know very well that Time is only a kind of Space. A mark on a blackboard has two dimensions; yet the line cannot exist unless it has duration. There is no difference between Time and any of the three dimensions of Space except that our consciousness moves along it.`;
+
+    function setCorpusPreset(index) {
+      document.querySelectorAll('.corpus-btn').forEach((b, i) => {
+        if (i === index) b.classList.add('active'); else b.classList.remove('active');
+      });
+      $('corpus').value = CORPORA[index];
+      RC = null;
+      refchart();
     }
+
+    /* ---------- SECP256K1 WITH BIGINT ---------- */
+    const P = 2n ** 256n - 2n ** 32n - 977n, N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+    const G = [0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n, 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n];
+    const md = a => ((a % P) + P) % P;
+    function inv(a) {
+      let r0 = P, r1 = md(a), t0 = 0n, t1 = 1n;
+      while (r1) { const q = r0 / r1;[r0, r1] = [r1, r0 - q * r1];[t0, t1] = [t1, t0 - q * t1]; }
+      return md(t0);
+    }
+    function add(p, q) {
+      if (!p) return q; if (!q) return p; let l;
+      if (p[0] === q[0]) {
+        if (md(p[1] + q[1]) === 0n) return null;
+        l = md(3n * p[0] * p[0] * inv(2n * p[1]));
+      } else {
+        l = md((q[1] - p[1]) * inv(q[0] - p[0]));
+      }
+      const x = md(l * l - p[0] - q[0]);
+      return [x, md(l * (p[0] - x) - p[1])];
+    }
+    function mul(k, p) {
+      let R = null, A = p;
+      while (k > 0n) { if (k & 1n) R = add(R, A); A = add(A, A); k >>= 1n; }
+      return R;
+    }
+    function jm(T) {
+      const [X, Y, Z] = T, ZZ = Z * Z % P, H = md(G[0] * ZZ - X), HH = H * H % P, I = 4n * HH % P, J = H * I % P, r = md(2n * (G[1] * Z % P * ZZ - Y)), V = X * I % P, X3 = md(r * r - J - 2n * V);
+      return [X3, md(r * (V - X3) - 2n * Y * J), md((Z + H) * (Z + H) - ZZ - HH)];
+    }
+    const h64 = b => b.toString(16).padStart(64, '0'), hb = h => Uint8Array.from(h.match(/../g), x => parseInt(x, 16)), bh = u => [...u].map(b => b.toString(16).padStart(2, '0')).join(''), sh = h => h.slice(0, 10) + '…' + h.slice(-8);
+    const TE = new TextEncoder(), TD = new TextDecoder();
+    async function keystream(S, len) {
+      const o = new Uint8Array(len), x = hb(h64(S[0]));
+      for (let i = 0; i * 32 < len; i++) {
+        const d = new Uint8Array(await crypto.subtle.digest('SHA-256', new Uint8Array([...x, i])));
+        o.set(d.subarray(0, Math.min(32, len - i * 32)), i * 32);
+      }
+      return o;
+    }
+    const xor = (a, b) => a.map((v, i) => v ^ b[i]);
+    const rnd = () => BigInt('0x' + bh(crypto.getRandomValues(new Uint8Array(32)))) % (N - 1n) + 1n;
+    const rk = bits => {
+      const b = crypto.getRandomValues(new Uint32Array(2));
+      return (BigInt(b[0]) * 4294967296n + BigInt(b[1])) % (1n << BigInt(bits)) + 1n;
+    };
+
+    let kB = null, QB = null, rA = null, C1 = null, C2 = null, SA = null, currentKS = null;
+
+    function keys() {
+      kB = rk(+$('bits').value); QB = mul(kB, G); C1 = C2 = null; currentKS = null;
+      $('eccout').innerHTML = `<div class="card" style="margin:0; background:#ffffff;">
+        <span class="table-badge badge-rose" style="margin-bottom:6px;">Bob's Keypair</span><br>
+        <b>Private Key k:</b> <code class="mono">${kB.toString()}</code> <span class="mut">(kept strictly secret by Bob)</span><br>
+        <b>Public Key Q = k·G:</b><br>
+        &nbsp;&nbsp;x = <code class="mono">${h64(QB[0])}</code><br>
+        &nbsp;&nbsp;y = <code class="mono">${h64(QB[1])}</code>
+      </div>`;
+      updateWorkbench();
+    }
+
+    async function encrypt() {
+      if (!kB) keys();
+      const m = TE.encode($('msg').value);
+      rA = rnd();
+      C1 = mul(rA, G);
+      SA = mul(rA, QB);
+      currentKS = await keystream(SA, m.length);
+      C2 = xor(m, currentKS);
+
+      $('eccout').innerHTML = `<div class="card" style="margin:0; background:#ffffff;">
+        <span class="table-badge badge-sky" style="margin-bottom:6px;">Alice's Encryption Output</span><br>
+        <b>Ephemeral Scalar r:</b> <code class="mono">${sh(h64(rA))}</code> <span class="mut">(one-time random number)</span><br>
+        <b>Ephemeral Point C1 = r·G:</b> <code class="mono">(${sh(h64(C1[0]))}, ${sh(h64(C1[1]))})</code><br>
+        <b>Shared Secret S = r·Q:</b> x = <code class="mono">${sh(h64(SA[0]))}</code><br>
+        <b>Payload C2 = M &oplus; KS:</b> <code class="mono">${bh(C2)}</code><br>
+        <span class="mut" style="display:inline-block; margin-top:6px;">Transmitted Ciphertext is the tuple <b>(C1, C2)</b>. Only C1 and C2 travel through the insecure channel.</span>
+      </div>`;
+      updateWorkbench();
+    }
+
+    async function decrypt() {
+      if (!C2) await encrypt();
+      const S2 = mul(kB, C1);
+      const ks = await keystream(S2, C2.length);
+      const pt = TD.decode(xor(C2, ks));
+      const match = S2[0] === SA[0];
+
+      $('eccout').innerHTML += `<div class="card" style="margin-top:12px; background:#f8faff; border-color:var(--ac);">
+        <span class="table-badge badge-emerald" style="margin-bottom:6px;">Bob's Decryption Computation</span><br>
+        <b>Reconstructed Shared Point S = k·C1:</b> x = <code class="mono">${sh(h64(S2[0]))}</code> 
+        ${match ? '<span class="ok">✓ Exactly matches Alice’s Secret (S = r·k·G = k·r·G)</span>' : '<span class="bad">✗ Mismatch</span>'}<br>
+        <b>Decrypted Message:</b> <b style="font-size:1.1rem; color:var(--fg);">“${pt}”</b>
+      </div>`;
+    }
+
+    $('b1').onclick = keys; $('b2').onclick = encrypt; $('b3').onclick = decrypt; $('bits').onchange = keys;
+
+    /* ---------- CAESAR CIPHER ---------- */
+    const caes = (t, k) => t.replace(/[a-z]/gi, c => { const b = c < 'a' ? 65 : 97; return String.fromCharCode(((c.charCodeAt(0) - b + k) % 26 + 26) % 26 + b); });
+    const AL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    function caesarView() {
+      const s = ((+$('shift').value || 0) % 26 + 26) % 26, m = $('msg').value, c = caes(m, s);
+      $('al1').textContent = AL; $('al2').textContent = AL.slice(s) + AL.slice(0, s);
+      $('cout').innerHTML = `<b>Input Plaintext:</b> <code class="mono">${m}</code><br><b>Encrypted Ciphertext (Shift ${s}):</b> <code class="mono" style="font-weight:700; color:var(--hi);">${c}</code><br><b>Decrypted (Inverse Shift &minus;${s}):</b> <code class="mono">${caes(c, -s)}</code>`;
+      updateWorkbench();
+    }
+    $('shift').oninput = caesarView; $('msg').oninput = caesarView;
+
+    /* ---------- BITSTREAM WORKBENCH UPDATER ---------- */
+    async function updateWorkbench() {
+      const msg = $('msg').value;
+      if ($('wbMsg')) $('wbMsg').textContent = msg;
+      const s = ((+$('shift').value || 0) % 26 + 26) % 26;
+      const caesarTxt = caes(msg, s);
+      const mBytes = TE.encode(msg);
+
+      let ks = currentKS;
+      if (!ks || ks.length < mBytes.length) {
+        if (!kB) keys();
+        if (!rA) rA = rnd();
+        if (!SA) SA = mul(rA, QB);
+        ks = await keystream(SA, mBytes.length);
+      }
+
+      let tbody = '';
+      const charSeen = {};
+
+      for (let i = 0; i < msg.length; i++) {
+        const char = msg[i];
+        const asciiHex = mBytes[i].toString(16).padStart(2, '0').toUpperCase();
+        const cChar = caesarTxt[i];
+        const ksByte = ks[i];
+        const ksHex = ksByte.toString(16).padStart(2, '0').toUpperCase();
+        const eccByte = mBytes[i] ^ ksByte;
+        const eccHex = eccByte.toString(16).padStart(2, '0').toUpperCase();
+
+        const isAlpha = /[A-Za-z]/.test(char);
+        let caesarLeak = `<span class="mut">–</span>`;
+        if (isAlpha) {
+          if (charSeen[char] !== undefined) {
+            caesarLeak = `<span class="leak-diff">Duplicate: '${char}' &rarr; '${cChar}'</span>`;
+          } else {
+            charSeen[char] = cChar;
+            caesarLeak = `<span class="mut">First '${char}'</span>`;
+          }
+        }
+
+        const eccDiffusion = `<span class="diffused-ok">Diffused (${eccHex})</span>`;
+
+        tbody += `<tr>
+          <td><code class="mono">${i}</code></td>
+          <td><b>${char === ' ' ? '&blank;' : char}</b></td>
+          <td><code class="mono">0x${asciiHex}</code></td>
+          <td><b style="color:var(--hi);">${cChar === ' ' ? '&blank;' : cChar}</b></td>
+          <td>${caesarLeak}</td>
+          <td><code class="mono">0x${ksHex}</code></td>
+          <td><code class="mono">0x${eccHex}</code></td>
+          <td>${eccDiffusion}</td>
+        </tr>`;
+      }
+
+      if ($('wbBody')) $('wbBody').innerHTML = tbody;
+    }
+
+    /* ---------- STATISTICAL METRICS & HISTOGRAMS ---------- */
+    const letters = t => t.toUpperCase().replace(/[^A-Z]/g, '');
+    function counts(t) { const f = Array(26).fill(0); for (const c of letters(t)) f[c.charCodeAt(0) - 65]++; return f; }
+    function bars(v, labels, col) {
+      const W = 520, H = 130, L = 8, B = 22, T = 14, n = v.length, bw = (W - 2 * L) / n, mx = Math.max(...v, 1e-9); let g = '';
+      v.forEach((a, i) => {
+        const h = (H - B - T) * a / mx, x = L + i * bw;
+        g += `<rect x="${x + 1.5}" y="${H - B - h}" width="${bw - 3}" height="${h}" rx="2" fill="${col}"/><text x="${x + bw / 2}" y="${H - B - h - 3}" font-size="8" text-anchor="middle" fill="var(--fg)">${(a * 100).toFixed(a * 100 < 10 ? 1 : 0)}</text><text x="${x + bw / 2}" y="${H - 8}" font-size="9" text-anchor="middle" fill="var(--mut)">${labels[i]}</text>`;
+      });
+      return `<svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg>`;
+    }
+    const norm = a => { const s = a.reduce((x, y) => x + y, 0); return a.map(v => v / s); };
+    const ent = a => -norm(a).reduce((s, p) => s + (p ? p * Math.log2(p) : 0), 0), ic = a => { const s = a.reduce((x, y) => x + y, 0); return a.reduce((t, c) => t + c * (c - 1), 0) / (s * (s - 1)); };
+
+    $('b4').onclick = async () => {
+      const s = ((+$('shift').value || 0) % 26 + 26) % 26, pl = counts(TEST), ca = counts(caes(TEST, s)), m = TE.encode(TEST), r = rnd(), S = mul(r, QB || (keys(), QB)), by = xor(m, await keystream(S, m.length));
+      const eb = Array(256).fill(0); by.forEach(b => eb[b]++); const e26 = Array(26).fill(0); by.forEach(b => e26[Math.floor(b * 26 / 256)]++);
+
+      const row = (n, a, A) => `<tr><td><b>${n}</b></td><td><code class="mono">${ent(a).toFixed(2)} bits</code> (theoretical max ${Math.log2(A).toFixed(2)})</td><td><code class="mono">${(ic(a) * A).toFixed(2)}</code> (uniform expected &approx; 1.00)</td></tr>`;
+
+      $('statout').innerHTML = `<div class="card" style="margin-top:14px;">
+        <div class="metric-strip">
+          <div class="metric-box"><div class="val">${ent(pl).toFixed(2)}</div><div class="lbl">Plaintext Entropy (bits/char)</div></div>
+          <div class="metric-box"><div class="val">${ent(ca).toFixed(2)}</div><div class="lbl">Caesar Entropy (Unchanged)</div></div>
+          <div class="metric-box"><div class="val">${ent(eb).toFixed(2)}</div><div class="lbl">Toy ECC Entropy (bits/byte)</div></div>
+          <div class="metric-box"><div class="val">${(ic(pl) * 26).toFixed(2)}</div><div class="lbl">Plaintext Coincidence &times; 26</div></div>
+        </div>
+
+        <h4 style="margin:16px 0 6px;">1. Plaintext Letter Frequencies (% of total alphabetic chars)</h4>
+        ${bars(norm(pl), [...AL], 'var(--ac)')}
+        
+        <h4 style="margin:16px 0 6px;">2. Caesar Ciphertext Frequencies (Shift s=${s}): Exact Rigid Rotation</h4>
+        ${bars(norm(ca), [...AL], 'var(--hi)')}
+        
+        <h4 style="margin:16px 0 6px;">3. Toy ECC Ciphertext Bytes: Uniform Flat Distribution</h4>
+        ${bars(norm(e26), [...AL].map((_, i) => i + 1), 'var(--emerald)')}
+        
+        <div class="wrap" style="margin-top:14px;">
+          <table>
+            <tr><th>Cryptographic Stream</th><th>Shannon Entropy H(X)</th><th>Normalized Index of Coincidence (I<sub>c</sub> &times; |&Sigma;|)</th></tr>
+            ${row('Plaintext (English Sample)', pl, 26)}
+            ${row('Caesar Intercept (s=' + s + ')', ca, 26)}
+            ${row('Toy ECC Byte Stream (secp256k1)', eb, 256)}
+          </table>
+        </div>
+        <div class="callout-academic" style="margin-top:10px;">
+          <b>Theoretical Takeaway:</b> The Caesar cipher leaves Shannon entropy and Index of Coincidence perfectly unaltered (<code class="mono">H(P) = H(C) = ${ent(pl).toFixed(2)}</code> bits, <code class="mono">I<sub>c</sub> &approx; 0.067</code>). The ciphertext is as linguistically redundant as the plaintext. Conversely, the Toy ECC scheme yields an entropy of <code class="mono">${ent(eb).toFixed(2)}</code> bits/byte (extremely close to the maximum 8.00 bits) and an Index of Coincidence near 1.00 (flat distribution), preventing frequency cryptanalysis.
+        </div>
+      </div>`;
+    };
+
+    /* ---------- CAESAR CRYPTANALYSIS LOGIC ---------- */
+    let RC = null;
+    function model() {
+      const t = $('corpus').value;
+      if (RC && RC.t === t) return RC;
+      const f = Array(26).fill(1), L = letters(t), bg = Array.from({ length: 26 }, () => Array(26).fill(1));
+      for (let i = 0; i < L.length; i++) {
+        f[L.charCodeAt(i) - 65]++;
+        if (i) bg[L.charCodeAt(i - 1) - 65][L.charCodeAt(i) - 65]++;
+      }
+      const s = f.reduce((a, b) => a + b, 0);
+      RC = {
+        t,
+        ref: f.map(v => v / s),
+        bg: bg.map(r => {
+          const q = r.reduce((a, b) => a + b, 0);
+          return r.map(v => Math.log(v / q));
+        })
+      };
+      return RC;
+    }
+
+    const WORDS = ['THE', 'AND', 'OF', 'TO', 'IN', 'IS', 'THAT', 'IT', 'FOR', 'WAS', 'WITH', 'AS', 'ARE', 'BUT', 'NOT', 'HAVE', 'THIS', 'FROM', 'THEY', 'WHICH'];
+
+    const meth = {
+      'Most frequent letter (Heuristic "E")': c => {
+        const f = counts(c);
+        return (f.indexOf(Math.max(...f)) - 4 + 26) % 26;
+      },
+      'Chi-Square Goodness-of-Fit (χ²)': c => {
+        const f = counts(c), n = f.reduce((a, b) => a + b, 0), { ref } = model();
+        let b = 0, bs = 1e18;
+        for (let s = 0; s < 26; s++) {
+          let x = 0;
+          for (let i = 0; i < 26; i++) {
+            const e = n * ref[i];
+            x += (f[(i + s) % 26] - e) ** 2 / e;
+          }
+          if (x < bs) { bs = x; b = s; }
+        }
+        return b;
+      },
+      'Bigram Log-Likelihood (n=2)': c => {
+        const L = letters(c), { bg } = model();
+        let b = 0, bs = -1e18;
+        for (let s = 0; s < 26; s++) {
+          let sc = 0;
+          for (let i = 1; i < L.length; i++) sc += bg[(L.charCodeAt(i - 1) - 65 - s + 26) % 26][(L.charCodeAt(i) - 65 - s + 26) % 26];
+          if (sc > bs) { bs = sc; b = s; }
+        }
+        return b;
+      },
+      'Exhaustive + Dictionary Words': c => {
+        let b = 0, bs = -1;
+        for (let s = 0; s < 26; s++) {
+          const t = ' ' + caes(c, -s).toUpperCase().replace(/[^A-Z]+/g, ' ') + ' ';
+          let sc = 0;
+          for (const w of WORDS) {
+            let i = -1;
+            while ((i = t.indexOf(' ' + w + ' ', i + 1)) >= 0) sc++;
+          }
+          if (sc > bs) { bs = sc; b = s; }
+        }
+        return b;
+      }
+    };
+
+    const COL = ['var(--mut)', 'var(--ac)', 'var(--hi)', 'var(--emerald)'];
+
+    function refchart() {
+      $('refchart').innerHTML = '<div class="card" style="margin-top:14px;"><b>Reference Letter Frequency Profile (from Active Corpus):</b>' + bars(model().ref.map((v, i) => v), [...AL], 'var(--ac2)') + '</div>';
+    }
+    $('corpus').oninput = () => { RC = null; refchart(); };
+
+    $('b5').onclick = () => {
+      const c = $('ct').value;
+      let h = '<div class="wrap" style="margin:12px 0;"><table><tr><th>Method</th><th>Recovered Key (s)</th><th>Decrypted Preview</th></tr>';
+      for (const [n, f] of Object.entries(meth)) {
+        const k = f(c);
+        h += `<tr><td><b>${n}</b></td><td><span class="table-badge badge-indigo">s = ${k}</span></td><td class="mono">${caes(c, -k).slice(0, 75)}…</td></tr>`;
+      }
+      const f = counts(c), n = f.reduce((a, b) => a + b, 0), { ref } = model(), sc = [];
+      for (let s = 0; s < 26; s++) {
+        let x = 0;
+        for (let i = 0; i < 26; i++) {
+          const e = n * ref[i];
+          x += (f[(i + s) % 26] - e) ** 2 / e;
+        }
+        sc.push(x);
+      }
+      const mn = Math.min(...sc);
+      $('recout').innerHTML = h + '</table></div><b>Chi-Square Score by Candidate Shift s &isin; [0, 25]:</b> <span class="mut">(Lower &chi;² = closer fit to corpus; shown inverted as 1/&chi;² so highest bar indicates optimal match)</span>' + bars(sc.map(x => mn / x), [...Array(26).keys()], 'var(--ac)');
+    };
+
+    const LEN = [5, 10, 20, 40, 80, 160, 320];
+    function windowOf(L) {
+      let st;
+      do { st = Math.floor(Math.random() * (TEST.length - 5)); } while (!/[A-Za-z]/.test(TEST[st]));
+      let c = 0, i = st;
+      while (i < TEST.length && c < L) {
+        if (/[A-Za-z]/.test(TEST[i])) c++;
+        i++;
+      }
+      return c === L ? TEST.slice(st, i) : null;
+    }
+
+    $('b6').onclick = async () => {
+      $('expout').innerHTML = '<div class="card" style="margin-top:12px;">Running 300 Monte-Carlo trial decrypts per length...</div>';
+      await sleep();
+      const T = 300, res = {};
+      for (const n in meth) res[n] = LEN.map(() => 0);
+
+      LEN.forEach((L, li) => {
+        for (let t = 0; t < T; t++) {
+          const s = 1 + Math.floor(Math.random() * 25);
+          let w = null;
+          while (!w) w = windowOf(L);
+          const c = caes(w, s);
+          for (const n in meth) if (meth[n](c) === s) res[n][li]++;
+        }
+      });
+
+      const W = 520, H = 230, Lm = 36, B = 30, Tp = 10, X = i => Lm + (W - Lm - 10) * i / (LEN.length - 1), Y = v => H - B - (H - B - Tp) * v;
+      let g = '';
+      for (const v of [0, .25, .5, .75, 1]) g += `<line x1="${Lm}" x2="${W - 10}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--ln)"/><text x="${Lm - 4}" y="${Y(v) + 3}" font-size="9" text-anchor="end" fill="var(--mut)">${v * 100}%</text>`;
+      LEN.forEach((L, i) => g += `<text x="${X(i)}" y="${H - 14}" font-size="9" text-anchor="middle" fill="var(--mut)">${L}</text>`);
+      g += `<text x="${(W + Lm) / 2}" y="${H - 2}" font-size="9" text-anchor="middle" fill="var(--mut)">Ciphertext Window Length (alphabetic letters)</text>`;
+      Object.keys(meth).forEach((n, j) => {
+        const p = res[n].map((v, i) => `${X(i)},${Y(v / T)}`).join(' ');
+        g += `<polyline points="${p}" fill="none" stroke="${COL[j]}" stroke-width="2"/>` + res[n].map((v, i) => `<circle cx="${X(i)}" cy="${Y(v / T)}" r="3" fill="${COL[j]}"/>`).join('');
+      });
+      const leg = Object.keys(meth).map((n, j) => `<span style="color:${COL[j]}; font-weight:700;">● ${n}</span>`).join(' &nbsp; ');
+      $('expout').innerHTML = `<div style="margin-top:12px;"><svg viewBox="0 0 ${W} ${H}" role="img">${g}</svg><div class="mut" style="margin:8px 0;">${leg}</div><div class="wrap"><table><tr><th>Length (Letters)</th>${Object.keys(meth).map(n => `<th>${n}</th>`).join('')}</tr>${LEN.map((L, i) => `<tr><td><b>${L} letters</b></td>${Object.keys(meth).map(n => `<td>${Math.round(100 * res[n][i] / T)}%</td>`).join('')}</tr>`).join('')}</table></div></div>`;
+    };
+
+    /* ---------- ATTACKS ON TOY ECC (BENCHMARKS & SOLVERS) ---------- */
+    let tj = 9e-6, ta = 7e-5;
+    function bench() {
+      let T = [G[0], G[1], 1n], t = performance.now();
+      T = jm(add(G, G).concat(1n));
+      for (let i = 0; i < 300; i++) T = jm(T);
+      tj = (performance.now() - t) / 301 / 1000;
+
+      let A = add(G, G);
+      t = performance.now();
+      for (let i = 0; i < 500; i++) A = add(A, G);
+      ta = (performance.now() - t) / 500 / 1000;
+
+      $('speed').textContent = `${(tj * 1e6).toFixed(1)} µs/step (Exhaustive search), ${(ta * 1e6).toFixed(0)} µs/step (BSGS step)`;
+
+      const human = s => s < 1 ? '< 1 second' : s < 60 ? s.toFixed(1) + ' seconds' : s < 3600 ? (s / 60).toFixed(1) + ' minutes' : s < 86400 ? (s / 3600).toFixed(1) + ' hours' : s < 3.156e7 ? (s / 86400).toFixed(1) + ' days' : s / 3.156e7 < 1e4 ? Math.round(s / 3.156e7) + ' years' : (s / 3.156e7).toExponential(1) + ' years';
+
+      let h = '<tr><th>Private-Key Space (Bits)</th><th>Exhaustive Brute Force (2<sup>bits</sup> steps)</th><th>BSGS / Pollard ρ (2<sup>bits/2</sup> steps)</th><th>Feasibility Status</th></tr>';
+
+      const rows = [
+        [16, 'Trivial (Instant)', 'badge-emerald'],
+        [24, 'Browser Feasible (few seconds)', 'badge-emerald'],
+        [32, 'Desktop GPU Feasible (~1-2 hours)', 'badge-sky'],
+        [48, 'Cluster / ASIC Feasible (days)', 'badge-amber'],
+        [64, 'Supercomputer Feasible (~years)', 'badge-rose'],
+        [128, 'Infeasible (Global infrastructure for millennia)', 'badge-rose'],
+        [256, 'Physically Impossible (Universal physical limits exceeded)', 'badge-rose']
+      ];
+
+      for (const [b, status, badge] of rows) {
+        h += `<tr>
+          <td><b>${b} bits</b> ${b === 256 ? '(Standard secp256k1)' : ''}</td>
+          <td>${human(2 ** b * tj)}</td>
+          <td>${human(2 * 2 ** (b / 2) * ta)}</td>
+          <td><span class="table-badge ${badge}">${status}</span></td>
+        </tr>`;
+      }
+      $('proj').innerHTML = h + '<tr><td colspan="4" class="mut">For physical comparison, the universe has existed for approximately 1.38 &times; 10<sup>10</sup> years. Solving 2<sup>128</sup> operations requires more energy than boiling the Earth’s oceans.</td></tr>';
+    }
+
+    const setP = v => $('pbar').style.width = (100 * v) + '%';
+    async function finish(name, k, ops, ms) {
+      const ok = k !== null && mul(k, G)[0] === QB[0];
+      let out = `<div class="card" style="margin-top:12px;">
+        <b>${name}:</b> ${ok ? `<span class="ok">Private key recovered successfully: k = ${k}</span>` : '<span class="bad">Key not found</span>'} 
+        <span class="mut">(True secret k was ${kB})</span><br>
+        Computed in <b>${ops.toLocaleString()}</b> point operations over <b>${(ms / 1000).toFixed(2)} seconds</b>.`;
+
+      if (ok) {
+        if (!C2) await encrypt();
+        const S = mul(k, C1);
+        out += `<br><br><b>Attacker decrypts ciphertext payload:</b><br>
+        Reconstructed shared point S = ${k} &middot; C1 &rarr; SHA-256 keystream &rarr; <b style="font-size:1.1rem; color:var(--fg);">“${TD.decode(xor(C2, await keystream(S, C2.length)))}”</b>`;
+      }
+      $('atk').innerHTML = out + '</div>';
+    }
+
+    let busy = false;
+    $('b7').onclick = async () => {
+      if (busy) return; if (!kB) keys(); if (!C2) await encrypt(); const bits = +$('bits').value;
+      if (bits > 20) {
+        $('atk').innerHTML = `<div class="card" style="margin-top:12px;">An exhaustive search across 2<sup>${bits}</sup> keys would require &approx; ${(2 ** bits * tj / 3600).toFixed(1)} hours in this single-threaded JavaScript environment. Choose a 16-20 bit key range or run the Baby-Step Giant-Step algorithm!</div>`;
+        return;
+      }
+      busy = true;
+      const max = 1n << BigInt(bits), t0 = performance.now();
+      let k = null, j = 2n, T = null;
+      const A = add(G, G);
+      if (QB[0] === G[0]) k = 1n; else if (QB[0] === A[0] && QB[1] === A[1]) k = 2n; else T = [A[0], A[1], 1n];
+
+      while (k === null && j < max) {
+        const end = j + 3000n < max ? j + 3000n : max;
+        for (; j < end;) {
+          j++; T = jm(T); const Z2 = T[2] * T[2] % P;
+          if (T[0] === QB[0] * Z2 % P && T[1] === QB[1] * Z2 % P * T[2] % P) { k = j; break; }
+        }
+        setP(Number(j) / Number(max));
+        await sleep();
+      }
+      setP(1);
+      await finish('Exhaustive Brute-Force Search', k, Number(k ?? j), performance.now() - t0);
+      busy = false;
+    };
+
+    $('b8').onclick = async () => {
+      if (busy) return; if (!kB) keys(); if (!C2) await encrypt(); busy = true;
+      const bits = +$('bits').value, m = BigInt(Math.ceil(Math.sqrt(2 ** bits))), t0 = performance.now(), baby = new Map();
+      let B = null, ops = 0;
+
+      for (let j = 1n; j <= m; j++) {
+        B = add(B, G);
+        baby.set(B[0], [j, B[1]]);
+        ops++;
+        if (j % 1500n === 0n) { setP(Number(j) / Number(m) / 2); await sleep(); }
+      }
+
+      const neg = [B[0], md(-B[1])];
+      let R = QB, k = null;
+      for (let g = 0n; g <= m + 1n; g++) {
+        if (R === null) { k = g * m; break; }
+        const e = baby.get(R[0]);
+        if (e) {
+          k = e[1] === R[1] ? g * m + e[0] : g * m - e[0];
+          break;
+        }
+        R = add(R, neg);
+        ops++;
+        if (g % 1500n === 1499n) { setP(.5 + Number(g) / Number(m) / 2); await sleep(); }
+      }
+      setP(1);
+      await finish(`Baby-Step Giant-Step Algorithm (Hash table of ${m.toLocaleString()} precomputed baby points)`, k, ops, performance.now() - t0);
+      busy = false;
+    };
+
+    /* ---------- INITIALIZATION ---------- */
+    $('testtxt').textContent = TEST;
+    setCorpusPreset(0);
+    $('ct').value = caes(TEST.slice(0, 230), 11);
+    caesarView();
+    keys();
+    setTimeout(bench, 60);
   </script>
 </body>
+
 </html>

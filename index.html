@@ -23,17 +23,31 @@
   <main class="container">
     <div class="hw-grid">
 
-      <!-- RETTANGOLO HOMEWORK 1 -->
-      <article class="hw-card active-card" onclick="window.location.href='homework1.html'" style="cursor: pointer;">
+      <!-- RETTANGOLO HOMEWORK 1 PT.1 -->
+      <article class="hw-card active-card" onclick="window.location.href='homework1-pt1.html'" style="cursor: pointer;">
         <div class="hw-card-top">
-          <span class="hw-number">Homework 1</span>
+          <span class="hw-number">Homework 1 pt.1</span>
         </div>
         <h3>From Private Key to Public Key (Toy Elliptic Curve)</h3>
         <p>
           Toy elliptic curve exploration: computing public keys Q = k·G on y² = x³ + 7 (mod 17) via iterative addition and the double-and-add algorithm, step-by-step point visualization, and statistical randomness analysis against SHA-256.
         </p>
         <div class="hw-actions">
-          <a href="homework1.html" class="btn btn-primary">Open Homework 1 ↗</a>
+          <a href="homework1-pt1.html" class="btn btn-primary">Open Homework 1 pt.1 ↗</a>
+        </div>
+      </article>
+
+      <!-- RETTANGOLO HOMEWORK 1 PT.2 -->
+      <article class="hw-card active-card" onclick="window.location.href='homework1-pt2.html'" style="cursor: pointer;">
+        <div class="hw-card-top">
+          <span class="hw-number">Homework 1 pt.2</span>
+        </div>
+        <h3>From Wallet Seed to Ethereum Address</h3>
+        <p>
+          Six-step deterministic key derivation pipeline from a 12-word mnemonic phrase to a checksummed address (BIP-39, BIP-32/44, secp256k1, Keccak-256, EIP-55), architectural role separation, and statistical avalanche analysis.
+        </p>
+        <div class="hw-actions">
+          <a href="homework1-pt2.html" class="btn btn-primary">Open Homework 1 pt.2 ↗</a>
         </div>
       </article>
 
@@ -42,9 +56,9 @@
         <div class="hw-card-top">
           <span class="hw-number">Homework 2</span>
         </div>
-        <h3>From Wallet Seed to Ethereum Address</h3>
+        <h3>Toy ECC Encryption, Caesar Cipher and Cryptanalysis</h3>
         <p>
-          Six-step deterministic key derivation pipeline from a 12-word mnemonic phrase to a checksummed address (BIP-39, BIP-32/44, secp256k1, Keccak-256, EIP-55), architectural role separation, and statistical avalanche analysis.
+          One message, two ciphers, two attacks: comparing a toy secp256k1 public-key encryption scheme with the classical Caesar cipher, statistical cryptanalysis with letter frequencies, chi-square, bigram scoring and dictionary methods, plus exhaustive and baby-step giant-step (BSGS) key recovery.
         </p>
         <div class="hw-actions">
           <a href="homework2.html" class="btn btn-primary">Open Homework 2 ↗</a>
