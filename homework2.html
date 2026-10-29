@@ -17,7 +17,7 @@
 
   <!-- NAVBAR CENTRATA -->
   <nav class="navbar">
-    <a href="index.html" class="brand-centered" title="Torna alla Home">
+    <a href="index.html" class="brand-centered" title="Back to Home">
       <span class="brand-title">Statistics</span>
       <span class="brand-subtitle">Diana Buffo</span>
     </a>
@@ -27,25 +27,21 @@
   <header>
     <div>
       <div class="hw-tag">Homework 2</div>
-      <h1>🔐 Toy ECC Encryption, Caesar Cipher and Cryptanalysis</h1>
+      <h1>Toy ECC Encryption, Caesar Cipher and Cryptanalysis</h1>
       <p>MSc in Cybersecurity · Statistics & Cryptography Lab · Diana Buffo. Comparing algebraic one-way trapdoors with
         classical substitution ciphers.</p>
     </div>
   </header>
 
   <main>
-    <!-- OVERVIEW GRID DEI 5 MODULI -->
-    <div class="grid">
-      <div class="card"><b>1. Toy ECC Scheme</b><br>Asymmetric key agreement over secp256k1 + SHA-256 keystream stream
-        encryption.</div>
-      <div class="card"><b>2. Caesar Cipher</b><br>Monoalphabetic classical substitution by modular letter displacement.
-      </div>
-      <div class="card"><b>3. Comparative Analysis</b><br>Procedures, key entropy, Shannon entropy and Index of
-        Coincidence.</div>
-      <div class="card"><b>4. Caesar Cryptanalysis</b><br>Automated key recovery using frequency heuristics, &chi;²,
-        bigrams and dictionary matching.</div>
-      <div class="card"><b>5. Discrete Log Attacks</b><br>Exhaustive search and Baby-Step Giant-Step (BSGS) key
-        recovery, plus architectural limits.</div>
+    <!-- 3 STEP PREVIEW CARDS IN CIMA -->
+    <div class="steps">
+      <div class="card"><b>1. Two Fundamental Ciphers</b><br>Comparing modern asymmetric elliptic curve cryptography
+        (secp256k1) with classical Caesar substitution.</div>
+      <div class="card"><b>2. Statistical Cryptanalysis</b><br>Breaking monoalphabetic ciphers via letter frequencies,
+        &chi;² testing, bigram scoring, and dictionary matching.</div>
+      <div class="card"><b>3. Discrete Logarithm Attacks</b><br>Attacking restricted ECC keys using brute force and
+        Baby-Step Giant-Step (BSGS), and why full 256-bit ECC is secure.</div>
     </div>
 
     <!-- CONTROLLI GLOBALI (MESSAGGIO E CHIAVE BOB) -->
@@ -421,7 +417,8 @@
             <td><code>O(&radic;K)</code> memory</td>
             <td>Computes <code>m = &lceil;&radic;K&rceil;</code>. Precomputes table of baby steps <code>j·G</code> for
               <code>j &isin; [0, m)</code>. Then computes giant steps <code>Q &minus; i·(mG)</code> until finding a
-              collision. Yields <code>k = i·m + j</code>.</td>
+              collision. Yields <code>k = i·m + j</code>.
+            </td>
           </tr>
         </table>
       </div>
@@ -527,14 +524,26 @@
       </p>
     </div>
 
-    <!-- FOOTER -->
-    <footer>
-      <p>
-        <b>Statistics & Cryptography Portfolio</b> · Diana Buffo<br>
-        <a href="index.html">← Return to Home</a> ·
-        <a href="homework1-pt1.html">Homework 1 pt.1</a> ·
-        <a href="homework1-pt2.html">Homework 1 pt.2</a>
-      </p>
+    <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
+    <footer class="google-nav-wrap">
+      <div class="google-nav-title">Which homework would you like to explore?</div>
+      <div class="google-pagination">
+        <a href="homework1-pt2.html" class="google-page-arrow" title="Previous: Homework 1 pt.2">&larr; Previous</a>
+        <div class="google-page-numbers">
+          <a href="homework1-pt1.html" class="google-page-link"
+            title="Homework 1 pt.1: From Private Key to Public Key">1.1</a>
+          <a href="homework1-pt2.html" class="google-page-link"
+            title="Homework 1 pt.2: From Wallet Seed to Ethereum Address">1.2</a>
+          <a href="homework2.html" class="google-page-link active"
+            title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
+          <a href="homework3.html" class="google-page-link"
+            title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+        </div>
+        <a href="homework3.html" class="google-page-arrow" title="Next: Homework 3">Next &rarr;</a>
+      </div>
+      <div class="google-home-link">
+        <a href="index.html">&larr; Return to Portfolio Overview</a>
+      </div>
     </footer>
   </main>
 

@@ -7,13 +7,15 @@
     <title>Homework 1 pt.1 – From Private Key to Public Key (Toy Elliptic Curve) | Diana Buffo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/homework1-pt1.css">
 </head>
 
 <body>
     <nav class="navbar">
-        <a href="index.html" class="brand-centered" title="Torna alla Home">
+        <a href="index.html" class="brand-centered" title="Back to Home">
             <span class="brand-title">Statistics</span>
             <span class="brand-subtitle">Diana Buffo</span>
         </a>
@@ -29,11 +31,12 @@
     </header>
     <main>
         <div class="steps">
-            <div class="card"><b>1. Pick a secret number k</b><br>The private key, e.g. k = 6.</div>
-            <div class="card"><b>2. Hop k times from G</b><br>Each hop applies the point-addition rule on the curve.
-            </div>
-            <div class="card"><b>3. Landing point = public key</b><br>Easy to compute forward, very hard to reverse
-                (ECDLP).</div>
+            <div class="card"><b>1. Private key → public key</b><br>Hop k times from the base point G on the curve: the
+                landing point is Q = k·G.</div>
+            <div class="card"><b>2. A shortcut for big keys</b><br>Double-and-add needs only as many steps as k has bits
+                (about 256 for a real key) instead of k.</div>
+            <div class="card"><b>3. One-way, not a hash</b><br>Q shows some structure, so it is not a scrambler; its
+                security is that finding k from Q is infeasible (ECDLP).</div>
         </div>
         <div class="card">
             <h3>What is this about?</h3>
@@ -121,17 +124,29 @@
             <p><b>Why Ethereum uses both.</b> The curve turns the private key into a public key; a hash then turns the
                 public key into the short address.</p>
         </div>
-
-        <!-- FOOTER -->
-        <footer>
-            <p>
-                <b>Statistics & Cryptography Portfolio</b> · Diana Buffo<br>
-                <a href="index.html">← Return to Home</a> · 
-                <a href="homework1-pt2.html">Homework 1 pt.2 →</a> · 
-                <a href="homework2.html">Homework 2 →</a>
-            </p>
-        </footer>
     </main>
+
+    <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
+    <footer class="google-nav-wrap">
+        <div class="google-nav-title">Which homework would you like to explore?</div>
+        <div class="google-pagination">
+            <div class="google-page-numbers">
+                <a href="homework1-pt1.html" class="google-page-link active"
+                    title="Homework 1 pt.1: From Private Key to Public Key">1.1</a>
+                <a href="homework1-pt2.html" class="google-page-link"
+                    title="Homework 1 pt.2: From Wallet Seed to Ethereum Address">1.2</a>
+                <a href="homework2.html" class="google-page-link"
+                    title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
+                <a href="homework3.html" class="google-page-link"
+                    title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+            </div>
+            <a href="homework1-pt2.html" class="google-page-arrow" title="Next: Homework 1 pt.2">Next &rarr;</a>
+        </div>
+        <div class="google-home-link">
+            <a href="index.html">&larr; Return to Portfolio Overview</a>
+        </div>
+    </footer>
+
     <script>
         const $ = id => document.getElementById(id);
         const f = p => p ? `(${p[0]}, ${p[1]})` : '∞';

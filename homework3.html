@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Homework 3 – Stochastic Penetration Process, LLN and CLT | Diana Buffo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/homework3.css">
+</head>
+
+<body>
+
+  <!-- NAVBAR CENTRATA -->
+  <nav class="navbar">
+    <a href="index.html" class="brand-centered" title="Back to Home">
+      <span class="brand-title">Statistics</span>
+      <span class="brand-subtitle">Diana Buffo</span>
+    </a>
+  </nav>
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="hw-tag">Homework 3</div>
+      <h1>Stochastic Penetration Processes: Law of Large Numbers and Central Limit Theorem</h1>
+      <p>A complete study of stochastic penetration across n systems and m attackers: trajectory behavior, variance
+        scaling, the Weak Law of Large Numbers, and Central Limit Theorem convergence.</p>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- 3 STEP PREVIEW CARDS (FIRST ELEMENT IN MAIN) -->
+    <div class="steps">
+      <div class="card"><b>1. Simulate Penetration Trajectories</b><br>Modeling m independent attackers across n systems
+        under Bernoulli breach and symmetric Rademacher walks.</div>
+      <div class="card"><b>2. Track Variance &amp; Convergence</b><br>Proving the Weak Law of Large Numbers (WLLN) for
+        average scores and discovering the invariant &radic;n scaling.</div>
+      <div class="card"><b>3. Central Limit Theorem &amp; Risk</b><br>Watching the Gaussian bell curve emerge by the CLT
+        and analyzing aggregate security exposure for enterprise defense.</div>
+    </div>
+
+    <!-- WHAT ARE WE DOING AND WHAT IS THE OBJECTIVE -->
+    <div class="card">
+      <h3 style="margin-top:0;">What are we doing and what is the objective?</h3>
+      <p>
+        <b>What we are doing:</b> We model a computer network penetration test where attackers sequentially attempt to
+        compromise a series of <b>n defensive systems</b>. We simulate <b>m independent attackers</b> performing this
+        test under two different scoring models:
+      </p>
+      <ul>
+        <li><b>Bernoulli Model:</b> At each system, an attacker either breaches the target with score <b>+1</b>
+          (probability <i>p</i>) or the defense holds with score <b>0</b> (probability <i>1 &minus; p</i>). This
+          represents cumulative breach counting.</li>
+        <li><b>Rademacher Model:</b> At each system, an attacker gets <b>+1</b> for an offensive breakthrough, or
+          <b>&minus;1</b> when intercepted by security countermeasures (each with probability 1/2). This represents a
+          symmetric, zero-mean confrontation.</li>
+      </ul>
+      <p>
+        Across these simulated runs, we track three mathematical quantities: the <b>Total Score</b>
+        (<code>S&#8345;</code>), the <b>Average Score</b> (<code>S&#8345;/n</code>), and the <b>Normalized Score</b>
+        (<code>S&#8345;/&radic;n</code>).
+      </p>
+      <p style="margin-bottom:0;">
+        <b>The Objective:</b> To understand how random individual outcomes transform into predictable aggregate laws as
+        the number of systems <i>n</i> grows. Specifically, we want to see: (1) why the total score spreads out
+        unpredictably; (2) why the average score strictly converges to a single constant number by the <b>Law of Large
+          Numbers</b>; (3) why dividing by <b>&radic;n</b> is the unique scaling that stabilizes variance; and (4) why
+        the standardized sum converges into a universal Gaussian bell curve by the <b>Central Limit Theorem</b>.
+        Finally, we translate these mathematical findings into concrete cybersecurity decisions regarding defensive
+        depth versus attacker volume.
+      </p>
+    </div>
+
+    <!-- GLOBAL SIMULATION CONTROLS -->
+    <div class="card">
+      <h3 style="margin-top:0;">Global Stochastic Simulation Studio</h3>
+      <div class="row">
+        <label>Model:
+          <select id="simModel">
+            <option value="r" selected>Rademacher (X&#7522; &isin; {&minus;1, +1}, &mu;=0, &sigma;&sup2;=1)</option>
+            <option value="b">Bernoulli (X&#7522; &isin; {0, 1}, &mu;=p, &sigma;&sup2;=p(1&minus;p))</option>
+          </select>
+        </label>
+        <label id="pWrapper" style="display:none;">Success Probability p: <b id="pDisplay">0.30</b>
+          <input id="pParam" type="range" min="0.05" max="0.95" step="0.05" value="0.30" style="width:130px;">
+        </label>
+        <label>Target Depth (n<sub>max</sub>):
+          <select id="nMax">
+            <option value="500">500 systems</option>
+            <option value="1000">1,000 systems</option>
+            <option value="2500">2,500 systems</option>
+            <option value="5000">5,000 systems</option>
+            <option value="10000" selected>10,000 systems</option>
+          </select>
+        </label>
+        <label>Attacker Ensemble (m):
+          <select id="mEnsemble">
+            <option value="500">500 attackers</option>
+            <option value="1000" selected>1,000 attackers</option>
+            <option value="2500">2,500 attackers</option>
+            <option value="5000">5,000 attackers</option>
+          </select>
+        </label>
+        <button id="btnRunSim">Re-run Simulation</button>
+      </div>
+
+      <div class="stat-pills">
+        <div class="stat-pill">
+          <span class="stat-pill-label">Single Step Mean (&mu;)</span>
+          <span class="stat-pill-val" id="pillMu">0.000</span>
+          <span class="stat-pill-sub" id="pillMuDesc">E[X&#7522;] (zero drift)</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-pill-label">Single Step Variance (&sigma;&sup2;)</span>
+          <span class="stat-pill-val" id="pillVar">1.000</span>
+          <span class="stat-pill-sub" id="pillVarDesc">Var(X&#7522;)</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-pill-label">Single Step Skewness (&gamma;&#8321;)</span>
+          <span class="stat-pill-val" id="pillSkew">0.000</span>
+          <span class="stat-pill-sub" id="pillSkewDesc">Symmetric distribution</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-pill-label">Simulated Attackers (m)</span>
+          <span class="stat-pill-val" id="pillM">1,000</span>
+          <span class="stat-pill-sub">Sample trajectories</span>
+        </div>
+      </div>
+      <span class="mut">Adjust simulation parameters above to regenerate all sample trajectories, distribution
+        histograms, variance scaling curves, and asymptotic convergence tests.</span>
+    </div>
+
+    <!-- SECTION 1: THE STOCHASTIC MODEL -->
+    <h2><span class="n">1</span> Stochastic Modeling of the Penetration Process</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        Imagine an enterprise network protected by <b>n defense checkpoints</b> (firewalls, internal subnets,
+        authentication gates). An attacker attempts to cross them one by one. At each checkpoint <i>i</i>, the
+        interaction generates a penetration score <b>X<sub>i</sub></b>.
+      </p>
+      <p>
+        The increments <b>X&#8321;, X&#8322;, &hellip;, X<sub>n</sub></b> are modeled as <b>independent and identically
+          distributed (i.i.d.)</b> random variables:
+      </p>
+      <ul>
+        <li><b>Identically distributed:</b> Every system in the chain enforces equivalent baseline security rules, so
+          each step shares the same probability distribution.</li>
+        <li><b>Independent:</b> What happens at system <i>i</i> does not change the defensive barrier of system
+          <i>i+1</i>.</li>
+      </ul>
+
+      <div class="wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Support</th>
+              <th>Probability Law</th>
+              <th>Mean &mu; = E[X<sub>i</sub>]</th>
+              <th>Variance &sigma;&sup2; = Var(X<sub>i</sub>)</th>
+              <th>Cybersecurity Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Bernoulli Model</b></td>
+              <td><code>{0, 1}</code></td>
+              <td><code>P(X&#7522; = 1) = p<br>P(X&#7522; = 0) = 1 &minus; p</code></td>
+              <td><b>p</b></td>
+              <td><b>p(1 &minus; p)</b></td>
+              <td>
+                <span class="table-badge badge-sky">Breach Counting</span><br>
+                Each system is either compromised (+1) or holds (0). The score never decreases. Over <i>n</i> systems,
+                the expected total score climbs steadily as <code>n &middot; p</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Rademacher Model</b></td>
+              <td><code>{&minus;1, +1}</code></td>
+              <td><code>P(X&#7522; = +1) = 1/2<br>P(X&#7522; = &minus;1) = 1/2</code></td>
+              <td><b>0</b></td>
+              <td><b>1</b></td>
+              <td>
+                <span class="table-badge badge-rose">Symmetric Clash</span><br>
+                Gains (+1) and active defensive blocks (&minus;1) are equally likely. Because
+                <code>(+1)(0.5) + (&minus;1)(0.5) = 0</code>, defensive successes balance out attacker gains on average.
+                The score wanders around zero without any upward or downward drift.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-bottom:0;">
+        Comparing these two models allows us to isolate two different phenomena: Bernoulli introduces a non-zero mean
+        (<code>&mu; = p &gt; 0</code>), creating a steady upward drift; Rademacher is symmetric around zero
+        (<code>&mu; = 0</code>), isolating the pure diffusion of random fluctuations without any drift.
+      </p>
+    </div>
+
+    <!-- SECTION 2: THE THREE QUANTITIES -->
+    <h2><span class="n">2</span> The Three Quantities: Total, Average, and Normalized Score</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        When we sum <i>n</i> independent random steps, the sum grows, but so does its uncertainty. To understand how the
+        process behaves as networks grow larger, we examine the sum at three different scales:
+      </p>
+
+      <div class="wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quantity</th>
+              <th>Formula</th>
+              <th>Expected Value</th>
+              <th>Theoretical Variance</th>
+              <th>Asymptotic Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Total Score</b></td>
+              <td><code>S&#8345; = &sum;&#7522;&#8321;&#8319; X&#7522;</code></td>
+              <td><code>n &middot; &mu;</code></td>
+              <td><code>n &middot; &sigma;&sup2; = O(n)</code></td>
+              <td>
+                Because independent variances add up directly (<code>Var = n&sigma;&sup2;</code>), the standard
+                deviation grows as <code>&sigma;&radic;n</code>. The spread between lucky and unlucky attackers widens
+                indefinitely.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Average Score</b></td>
+              <td><code>S&#8345; / n = (1/n) &sum;&#7522;&#8321;&#8319; X&#7522;</code></td>
+              <td><code>&mu;</code></td>
+              <td><code>&sigma;&sup2; / n = O(1/n)</code></td>
+              <td>
+                Dividing by <i>n</i> scales variance by <code>1/n&sup2;</code>, giving
+                <code>Var = &sigma;&sup2;/n</code>. As <i>n</i> grows, the variance drops to 0. All attackers end up
+                with the exact same average breach rate <code>&mu;</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Normalized Score</b></td>
+              <td><code>S&#8345; / &radic;n = (1/&radic;n) &sum;&#7522;&#8321;&#8319; X&#7522;</code></td>
+              <td><code>&mu;&radic;n</code><br><small>(= 0 for Rademacher)</small></td>
+              <td><code>&sigma;&sup2; = O(1)</code><br><small>(Constant invariant)</small></td>
+              <td>
+                Dividing by <code>&radic;n</code> scales variance by <code>(1/&radic;n)&sup2; = 1/n</code>, giving
+                <code>Var = (n&sigma;&sup2;)/n = &sigma;&sup2;</code>. The variance does not depend on <i>n</i>.
+                Fluctuations neither blow up to infinity nor collapse to zero.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="margin-bottom:0;">
+        This reveals why <code>&radic;n</code> is the fundamental scale of random walks. If we divide by <code>n</code>,
+        variance collapses to 0 and all fluctuation details disappear. If we do not divide at all, variance grows to
+        infinity and trajectories blow up. Dividing by <code>&radic;n</code> perfectly balances accumulation and
+        scaling, keeping variance strictly constant at <code>&sigma;&sup2;</code>.
+      </p>
+    </div>
+
+    <!-- SECTION 3: SAMPLE TRAJECTORY DYNAMICS -->
+    <h2><span class="n">3</span> Sample Trajectory Dynamics</h2>
+    <div class="card">
+      <div class="row">
+        <label>Quantity to Display:
+          <select id="trajMetric">
+            <option value="tot">Total Score S&#7522; (Cumulative)</option>
+            <option value="avg">Average Score S&#7522; / i (Empirical Mean)</option>
+            <option value="norm" selected>Normalized Score S&#7522; / &radic;i (Diffusive Scale)</option>
+          </select>
+        </label>
+        <label>Trajectories to Plot: <b id="trajKDisplay">20</b>
+          <input id="trajK" type="range" min="3" max="50" value="20" style="width:120px;">
+        </label>
+        <label>
+          <input id="trajLogX" type="checkbox"> Logarithmic x-axis
+        </label>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="canvasTraj"></canvas>
+      </div>
+      <div class="live-readout" id="trajReadout">
+        Rendering trajectory dynamics...
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> Blue and purple lines = individual attacker trajectories; dashed orange line = theoretical
+        mean E[&middot;]; shaded blue band = &plusmn;2&sigma; confidence envelope (~95% of paths stay inside). For total
+        score S&#7522;, the envelope opens like a trumpet (&plusmn;2&sigma;&radic;i); for average score S&#7522;/i, it
+        narrows like a funnel (&plusmn;2&sigma;/&radic;i &rarr; 0); for normalized score S&#7522;/&radic;i, it forms a
+        constant channel of width &plusmn;2&sigma;.
+      </p>
+    </div>
+
+    <!-- SECTION 4: DISTRIBUTION HISTOGRAMS -->
+    <h2><span class="n">4</span> Empirical Distribution Analysis Across Checkpoints</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        Here we record the scores of all <b>m independent attackers</b> at system checkpoint <b>n</b>. The three
+        histograms compare the shapes of the distributions as system depth increases from 1 to 10,000.
+      </p>
+
+      <div class="row">
+        <label>System Checkpoint n = <b id="nCheckDisplay" style="color:var(--ac); font-size:1.1rem;">1000</b>
+          <input id="nCheckSlider" type="range" min="0" max="12" value="9" style="width:180px;">
+        </label>
+        <button id="btnPlayN" class="sec">Play Progression</button>
+        <label>Histogram Bins: <b id="binsDisplay">32</b>
+          <input id="binsSlider" type="range" min="12" max="60" value="32" style="width:110px;">
+        </label>
+      </div>
+
+      <div class="canvas-grid-3">
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Total Score S&#8345;</h3>
+          <canvas id="canvasHistTot"></canvas>
+        </div>
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Average Score S&#8345; / n</h3>
+          <canvas id="canvasHistAvg"></canvas>
+        </div>
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Normalized Score S&#8345; / &radic;n</h3>
+          <canvas id="canvasHistNorm"></canvas>
+        </div>
+      </div>
+
+      <div class="live-readout" id="histReadout">
+        Analyzing empirical distributions...
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> Blue bars = empirical score distribution across attackers; solid orange curve =
+        theoretical normal distribution with matching mean and variance. As n increases: the total score bell S&#8345;
+        widens and moves right; the average score bell S&#8345;/n compresses into a razor-thin needle at &mu;; the
+        normalized score bell S&#8345;/&radic;n maintains a stable width &sigma; and fits the Gaussian curve with
+        increasing precision.
+      </p>
+    </div>
+
+    <!-- SECTION 5: LAW OF LARGE NUMBERS (LLN) -->
+    <h2><span class="n">5</span> Weak Law of Large Numbers and Convergence in Probability</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        The <b>Weak Law of Large Numbers (WLLN)</b> guarantees that as the number of systems <i>n</i> grows, the
+        empirical average score <code>S&#8345;/n</code> gets closer and closer to the theoretical expected score
+        <code>&mu;</code>, and the probability of observing an outlier drops to zero:
+      </p>
+      <div class="callout-academic">
+        For any positive tolerance margin <code>&epsilon; &gt; 0</code>:
+        <br>
+        <code>lim<sub>n &rarr; &infin;</sub> P(|S&#8345;/n &minus; &mu;| &gt; &epsilon;) = 0</code>
+      </div>
+
+      <p>
+        <b>Why does this happen? (Chebyshev's Inequality):</b>
+        <br>
+        Chebyshev's inequality states that for any random variable <i>Y</i> with finite variance, the probability of
+        deviating from its expected value by more than <code>&epsilon;</code> is bounded by its variance:
+        <code>P(|Y &minus; E[Y]| &ge; &epsilon;) &le; Var(Y) / &epsilon;&sup2;</code>.
+        <br>
+        Applying this to the average score <code>Y = S&#8345;/n</code>, we know that <code>E[S&#8345;/n] = &mu;</code>
+        and <code>Var(S&#8345;/n) = &sigma;&sup2;/n</code>. Substituting gives:
+      </p>
+      <div class="callout-academic">
+        <code>P(|S&#8345;/n &minus; &mu;| &gt; &epsilon;) &le; &sigma;&sup2; / (n &middot; &epsilon;&sup2;)</code>
+      </div>
+      <p>
+        Because <code>&sigma;&sup2;</code> and <code>&epsilon;</code> are fixed numbers, having <i>n</i> in the
+        denominator forces the entire fraction to <b>0</b> as <code>n &rarr; &infin;</code>. This proves that an
+        attacker's average success rate will inevitably converge to <code>&mu;</code>.
+      </p>
+
+      <div class="row">
+        <label>Tolerance Margin &epsilon;: <b id="epsDisplay">0.10</b>
+          <input id="epsSlider" type="range" min="0.01" max="0.40" step="0.01" value="0.10" style="width:140px;">
+        </label>
+      </div>
+
+      <div class="canvas-grid-2">
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Density of S&#8345;/n &amp; Tolerance Window
+            (&plusmn;&epsilon;)</h3>
+          <canvas id="canvasLlnHist"></canvas>
+        </div>
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Tail Probability vs Chebyshev Bound (&le;
+            &sigma;&sup2;/(n&epsilon;&sup2;))</h3>
+          <canvas id="canvasLlnCurve"></canvas>
+        </div>
+      </div>
+
+      <div class="live-readout" id="llnReadout">
+        Computing LLN convergence rates...
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> Left: green corridor = tolerance window [&mu;&minus;&epsilon;, &mu;+&epsilon;]; blue bars
+        = conforming attackers, red bars = outliers deviating by more than &epsilon; (which vanish as n grows). Right:
+        blue line = empirical fraction of outliers, dashed orange line = Chebyshev theoretical ceiling min(1,
+        &sigma;&sup2;/(n&epsilon;&sup2;)). Both plunge to 0 as n increases, proving convergence in probability.
+      </p>
+    </div>
+
+    <!-- SECTION 6: VARIANCE SCALING -->
+    <h2><span class="n">6</span> Variance Scaling Under Different Normalizations</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        To verify how variance scales with <i>n</i>, we plot on a <b>log-log scale</b>. If a relationship follows a
+        power law <code>Var = c &middot; n<sup>k</sup></code>, taking logarithms gives
+        <code>log&#8321;&#8320;(Var) = log&#8321;&#8320;(c) + k &middot; log&#8321;&#8320;(n)</code>. On a log-log plot,
+        this appears as a straight line whose slope <b>k</b> is exactly the scaling exponent:
+      </p>
+
+      <div class="wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quantity</th>
+              <th>Variance Formula</th>
+              <th>Power Law</th>
+              <th>Log-Log Slope (k)</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Unnormalized S&#8345;</b></td>
+              <td><code>Var(S&#8345;) = n &middot; &sigma;&sup2;</code></td>
+              <td><code>&prop; n&sup1;</code></td>
+              <td><b>+1.0 (Ascending line)</b></td>
+              <td>Variance grows 10-fold whenever systems increase 10-fold.</td>
+            </tr>
+            <tr>
+              <td><b>Average Score S&#8345;/n</b></td>
+              <td><code>Var(S&#8345;/n) = &sigma;&sup2; / n</code></td>
+              <td><code>&prop; n&minus;&sup1;</code></td>
+              <td><b>&minus;1.0 (Descending line)</b></td>
+              <td>Variance shrinks 10-fold whenever systems increase 10-fold.</td>
+            </tr>
+            <tr>
+              <td><b>Normalized Score S&#8345;/&radic;n</b></td>
+              <td><code>Var(S&#8345;/&radic;n) = &sigma;&sup2;</code></td>
+              <td><code>&prop; n&deg; = const</code></td>
+              <td><b>0.0 (Flat horizontal line)</b></td>
+              <td>Variance is invariant to system size.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="canvasVarLogLog"></canvas>
+      </div>
+      <div class="live-readout" id="varReadout">
+        Analyzing variance log-log slopes...
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> The slopes on this log-log plot represent the power-law exponents. Blue line =
+        Var(S&#8345;) with slope +1.0 (linear explosion); orange line = Var(S&#8345;/n) with slope &minus;1.0 (inverse
+        collapse); purple line = Var(S&#8345;/&radic;n) with slope 0.0 (completely horizontal, proving variance
+        invariance under &radic;n normalization).
+      </p>
+    </div>
+
+    <!-- SECTION 7: CENTRAL LIMIT THEOREM (CLT) -->
+    <h2><span class="n">7</span> Central Limit Theorem and Gaussian Asymptotics</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        The <b>Lindeberg-Levy Central Limit Theorem (CLT)</b> states that the properly standardized sum of independent
+        random variables always converges in distribution to the standard Gaussian bell curve <code>N(0, 1)</code>:
+      </p>
+      <div class="callout-academic">
+        As <code>n &rarr; &infin;</code>,
+        <br>
+        <code>Z&#8345;* = (S&#8345; &minus; n&mu;) / (&sigma;&radic;n) &rarr; N(0, 1)</code>
+      </div>
+
+      <p>
+        <b>Why Rademacher and Bernoulli behave differently:</b>
+      </p>
+      <ul>
+        <li>
+          <b>Rademacher Case (&mu; = 0, &sigma; = 1):</b> Because the mean is already zero, the normalized score is
+          already standardized:
+          <code>S&#8345;/&radic;n &equiv; (S&#8345; &minus; n(0))/(1&middot;&radic;n) = Z&#8345;*</code>. It converges
+          directly to <code>N(0, 1)</code> without any shifting. In addition, because +1 and &minus;1 are equally
+          likely, the distribution has zero skewness (<code>&gamma;&#8321; = 0</code>). By the Berry-Esseen theorem,
+          convergence to the bell curve is very fast.
+        </li>
+        <li>
+          <b>Bernoulli Case (&mu; = p &gt; 0, &sigma; = &radic;(p(1&minus;p))):</b> Because each step has a positive
+          expected value <i>p</i>, the raw sum <code>S&#8345;/&radic;n</code> has an expected value of
+          <code>p&radic;n &rarr; &infin;</code>. To observe the Gaussian shape, we must subtract <code>np</code> and
+          divide by <code>&radic;(np(1&minus;p))</code>. Furthermore, if <i>p</i> is far from 0.5 (e.g.
+          <code>p = 0.10</code>), the initial distribution is skewed, requiring a larger <i>n</i> before the bell shape
+          looks symmetric.
+        </li>
+      </ul>
+
+      <div class="row">
+        <label>
+          <input id="chkStandardize" type="checkbox" checked> Standardize sum: (S&#8345; &minus; n&mu;) /
+          (&sigma;&radic;n)
+        </label>
+      </div>
+
+      <div class="canvas-grid-2">
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Empirical Density vs Standard Normal N(0,1)
+          </h3>
+          <canvas id="canvasCltHist"></canvas>
+        </div>
+        <div>
+          <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Kolmogorov-Smirnov Distance D&#8345; vs n
+          </h3>
+          <canvas id="canvasCltKs"></canvas>
+        </div>
+      </div>
+
+      <div class="live-readout" id="cltReadout">
+        Evaluating CLT convergence metrics...
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> Left: blue bars = standardized attacker scores, orange curve = standard normal N(0,1).
+        Right: blue line = Kolmogorov-Smirnov distance D&#8345; = sup|F&#8345;(z) &minus; &Phi;(z)| decaying toward 0 at
+        rate O(1/&radic;n); dashed orange line = Monte Carlo noise floor (~0.886/&radic;m) caused by simulating a finite
+        sample of m attackers.
+      </p>
+    </div>
+
+    <!-- SECTION 8: CYBERSECURITY INTERPRETATION -->
+    <h2><span class="n">8</span> Cybersecurity &amp; Penetration Testing Interpretation</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        What do these statistical results mean for network defense and offensive red teaming?
+      </p>
+
+      <div class="wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Parameter / Metric</th>
+              <th>Statistical Definition</th>
+              <th>Cybersecurity Meaning</th>
+              <th>Takeaway</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Target Depth (n)</b></td>
+              <td>Sequence length of i.i.d. increments</td>
+              <td>Number of consecutive defensive layers, subnets, or security hurdles an attacker must cross.</td>
+              <td>
+                Increasing <i>n</i> does not change the percentage of breached systems (which remains <i>p</i> in
+                Bernoulli). However, it shrinks the uncertainty of an attacker's average effectiveness
+                (<code>&sigma;/&radic;n</code>), making red-team performance predictable across large networks.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Attacker Ensemble (m)</b></td>
+              <td>Sample size of independent paths</td>
+              <td>Number of distinct threat actors or automated penetration test campaigns probing the perimeter.</td>
+              <td>
+                Varying <i>m</i> does not alter the capability of any single attacker. However, a larger <i>m</i>
+                increases the chance of an extreme outlier: the best attacker's score will be significantly higher
+                simply because more attempts were made.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Aggregate Penetration Score (T<sub>n,m</sub>)</b></td>
+              <td><code>T<sub>n,m</sub> = &sum;&#11388;&#8321;&#7504; S&#8345;<sup>(j)</sup></code></td>
+              <td>Total cumulative breaches suffered by the enterprise across all attackers during the campaign.</td>
+              <td>
+                Expected organizational damage is <code>m &middot; n &middot; &mu;</code> with variance
+                <code>m &middot; n &middot; &sigma;&sup2;</code>. Total damage fluctuates on the scale of
+                <code>&sigma;&radic;(m &middot; n)</code>.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Overall Breach Rate</b></td>
+              <td><code>T<sub>n,m</sub> / (m &middot; n)</code></td>
+              <td>Fraction of total attack attempts that successfully compromised a target.</td>
+              <td>
+                Variance is <code>&sigma;&sup2; / (m &middot; n)</code>. Because both <i>m</i> and <i>n</i> appear in
+                the denominator, the overall breach rate becomes virtually deterministic, forming the mathematical
+                foundation for cyber-insurance risk underwriting.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row" style="margin-top:20px;">
+        <label>Attacker Sub-Ensemble m&prime;: <b id="subMDisplay">1000</b>
+          <input id="subMSlider" type="range" min="5" max="1000" value="1000" style="width:160px;">
+        </label>
+      </div>
+
+      <div class="canvas-container">
+        <canvas id="canvasMTrace"></canvas>
+      </div>
+      <div class="live-readout" id="mTraceReadout">
+        Analyzing aggregate campaign scores...
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> Blue line = running average breach score as more attackers j are included; dashed orange
+        line = theoretical expectation n&mu;; green shaded band = confidence corridor n&mu; &plusmn;
+        2&sigma;&radic;(n/j). As the attacker campaign grows in size, the observed average damage converges with high
+        precision to the expected value.
+      </p>
+    </div>
+
+    <!-- SECTION 9: NUMERICAL VALIDATION TABLE -->
+    <h2><span class="n">9</span> Multi-Checkpoint Numerical Validation Table</h2>
+    <div class="card">
+      <p style="margin-top:0;">
+        This table compares the simulated results from our <i>m</i> attackers against the exact theoretical formulas
+        across all system depths <i>n</i>. The row matching the currently inspected checkpoint <b>n</b> is highlighted.
+      </p>
+
+      <div class="wrap">
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th>n</th>
+              <th>Var(S&#8345;) [Sim / Theo]</th>
+              <th>Var(S&#8345;/n) [Sim / Theo]</th>
+              <th>Var(S&#8345;/&radic;n) [Sim / Theo]</th>
+              <th>P(|S&#8345;/n &minus; &mu;| &gt; &epsilon;) [Sim / Chebyshev]</th>
+              <th>Kolmogorov-Smirnov D&#8345; from N(0,1)</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody">
+            <tr>
+              <td colspan="6" class="mut">Simulating data across checkpoints...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mut" style="margin:6px 0 0;">
+        <b>What it means:</b> Var(S&#8345;) = n&sigma;&sup2; (grows linearly) | Var(S&#8345;/n) = &sigma;&sup2;/n
+        (decays to 0) | Var(S&#8345;/&radic;n) = &sigma;&sup2; (strictly invariant) | Chebyshev Bound = min(1,
+        &sigma;&sup2;/(n&epsilon;&sup2;)). The active row highlights the checkpoint currently selected above.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
+  <footer class="google-nav-wrap">
+    <div class="google-nav-title">Which homework would you like to explore?</div>
+    <div class="google-pagination">
+      <a href="homework2.html" class="google-page-arrow" title="Previous: Homework 2">&larr; Previous</a>
+      <div class="google-page-numbers">
+        <a href="homework1-pt1.html" class="google-page-link"
+          title="Homework 1 pt.1: From Private Key to Public Key">1.1</a>
+        <a href="homework1-pt2.html" class="google-page-link"
+          title="Homework 1 pt.2: From Wallet Seed to Ethereum Address">1.2</a>
+        <a href="homework2.html" class="google-page-link"
+          title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
+        <a href="homework3.html" class="google-page-link active"
+          title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+      </div>
+    </div>
+    <div class="google-home-link">
+      <a href="index.html">&larr; Return to Portfolio Overview</a>
+    </div>
+  </footer>
+
+  <!-- CORE STOCHASTIC ENGINE & INTERACTIVE PLOTTING SCRIPT -->
+  <script>
+    // Utility selectors & CSS helper
+    const $ = id => document.getElementById(id);
+    const getCssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    // High precision Error Function and Standard Normal CDF
+    function erf(x) {
+      const sign = Math.sign(x);
+      x = Math.abs(x);
+      const t = 1.0 / (1.0 + 0.3275911 * x);
+      const poly = 1.0 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t) * Math.exp(-x * x);
+      return sign * poly;
+    }
+    const Phi = z => 0.5 * (1.0 + erf(z / Math.SQRT2));
+
+    // Number formatters
+    const fmt = v => {
+      if (!isFinite(v)) return '--';
+      if (Math.abs(v) >= 1000) return v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+      if (Math.abs(v) >= 10) return v.toFixed(2);
+      if (Math.abs(v) >= 0.001) return v.toFixed(4);
+      return v.toExponential(2);
+    };
+
+    // Statistical moments helper
+    function calcMoments(arr) {
+      const len = arr.length;
+      let sum = 0;
+      for (let i = 0; i < len; i++) sum += arr[i];
+      const mean = sum / len;
+      let m2 = 0, m3 = 0, m4 = 0;
+      for (let i = 0; i < len; i++) {
+        const d = arr[i] - mean;
+        m2 += d * d;
+        m3 += d * d * d;
+        m4 += d * d * d * d;
+      }
+      const s2 = m2 / (len - 1);
+      const sd = Math.sqrt(s2);
+      const skew = sd > 1e-12 ? (m3 / len) / Math.pow(m2 / len, 1.5) : 0;
+      const kurt = sd > 1e-12 ? ((m4 / len) / Math.pow(m2 / len, 2.0)) - 3.0 : 0;
+      return { mean, s2, sd, skew, kurt };
+    }
+
+    // Canvas setup helper with Retina display scaling
+    function setupCanvas(id) {
+      const canvas = $(id);
+      if (!canvas) return null;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width || canvas.clientWidth || 300;
+      const h = rect.height || canvas.clientHeight || 240;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = '12px ' + getCssVar('--font-family');
+      return { ctx, w, h };
+    }
+
+    // Global state
+    let simData = null;
+    let animTimer = null;
+    const CHECKPOINTS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+
+    // Main Monte Carlo simulation routine
+    function runSimulation() {
+      const isBernoulli = $('simModel').value === 'b';
+      const p = isBernoulli ? parseFloat($('pParam').value) : 0.5;
+      const N = parseInt($('nMax').value, 10);
+      const m = parseInt($('mEnsemble').value, 10);
+
+      const mu = isBernoulli ? p : 0.0;
+      const variance = isBernoulli ? p * (1.0 - p) : 1.0;
+      const sd = Math.sqrt(variance);
+      const skewness = isBernoulli ? (1.0 - 2.0 * p) / Math.sqrt(p * (1.0 - p)) : 0.0;
+
+      // Filter checkpoints up to N
+      const validCP = CHECKPOINTS.filter(c => c <= N);
+      if (validCP[validCP.length - 1] !== N) validCP.push(N);
+
+      // Pre-allocate matrix S[checkpointIndex][attackerIndex]
+      const S = validCP.map(() => new Float64Array(m));
+      const maxStoredPaths = Math.min(m, 50);
+      const paths = [];
+
+      // Run simulation across all m attackers
+      for (let a = 0; a < m; a++) {
+        let runningScore = 0;
+        let cpIdx = 0;
+        const recordTrajectory = a < maxStoredPaths ? new Float32Array(N + 1) : null;
+
+        for (let i = 1; i <= N; i++) {
+          const step = isBernoulli ? (Math.random() < p ? 1 : 0) : (Math.random() < 0.5 ? 1 : -1);
+          runningScore += step;
+
+          if (cpIdx < validCP.length && i === validCP[cpIdx]) {
+            S[cpIdx][a] = runningScore;
+            cpIdx++;
+          }
+          if (recordTrajectory) {
+            recordTrajectory[i] = runningScore;
+          }
+        }
+        if (recordTrajectory) paths.push(recordTrajectory);
+      }
+
+      // Compute statistics at each checkpoint
+      const varS = [];
+      const ksDistances = [];
+      validCP.forEach((cpN, idx) => {
+        const moments = calcMoments(S[idx]);
+        varS.push(moments.s2);
+
+        // Standardized array for Kolmogorov-Smirnov test against N(0, 1)
+        const stdArr = new Float64Array(m);
+        const stdDenom = sd * Math.sqrt(cpN);
+        for (let j = 0; j < m; j++) {
+          stdArr[j] = (S[idx][j] - cpN * mu) / stdDenom;
+        }
+        stdArr.sort();
+
+        // One-sample Kolmogorov-Smirnov statistic
+        let maxD = 0;
+        for (let j = 0; j < m; j++) {
+          const emp1 = j / m;
+          const emp2 = (j + 1) / m;
+          const theo = Phi(stdArr[j]);
+          const d1 = Math.abs(emp1 - theo);
+          const d2 = Math.abs(emp2 - theo);
+          if (d1 > maxD) maxD = d1;
+          if (d2 > maxD) maxD = d2;
+        }
+        ksDistances.push(maxD);
+      });
+
+      simData = {
+        isBernoulli, p, N, m, mu, variance, sd, skewness,
+        validCP, S, paths, varS, ksDistances
+      };
+
+      // Update stat pills
+      $('pillMu').textContent = mu.toFixed(3);
+      $('pillVar').textContent = variance.toFixed(3);
+      $('pillSkew').textContent = skewness.toFixed(3);
+      $('pillM').textContent = m.toLocaleString('en-US');
+
+      $('pillMuDesc').textContent = isBernoulli ? `p = ${p.toFixed(2)} (positive drift)` : 'Zero-mean symmetric';
+      $('pillVarDesc').textContent = isBernoulli ? `p(1-p) = ${variance.toFixed(3)}` : 'Unit variance s2=1';
+      $('pillSkewDesc').textContent = isBernoulli ? (Math.abs(skewness) < 0.01 ? 'Symmetric (p=0.5)' : `Asymmetric (g1=${skewness.toFixed(2)})`) : 'Perfect symmetry (g1=0)';
+
+      // Adjust slider ranges
+      $('nCheckSlider').max = validCP.length - 1;
+      if (parseInt($('nCheckSlider').value, 10) >= validCP.length) {
+        $('nCheckSlider').value = validCP.length - 1;
+      }
+      $('subMSlider').max = m;
+      $('subMSlider').value = m;
+
+      renderAllVisualizations();
+    }
+
+    // High-level render orchestrator
+    function renderAllVisualizations() {
+      if (!simData) return;
+      renderTrajectories();
+      renderHistograms();
+      renderLln();
+      renderVarianceLogLog();
+      renderClt();
+      renderAttackerTrace();
+      renderSummaryTable();
+    }
+
+    // 1. Trajectory Plotter
+    function renderTrajectories() {
+      const setup = setupCanvas('canvasTraj');
+      if (!setup) return;
+      const { ctx, w, h } = setup;
+      const { N, mu, sd, paths } = simData;
+
+      const metric = $('trajMetric').value;
+      const numPaths = Math.min(parseInt($('trajK').value, 10), paths.length);
+      const isLogX = $('trajLogX').checked;
+      $('trajKDisplay').textContent = numPaths;
+
+      // Transformation functions
+      let fnY, fnTheoMean, fnTheoSD, metricLabel;
+      if (metric === 'tot') {
+        fnY = (s, i) => s;
+        fnTheoMean = i => mu * i;
+        fnTheoSD = i => sd * Math.sqrt(i);
+        metricLabel = 'Total Score Si';
+      } else if (metric === 'avg') {
+        fnY = (s, i) => s / i;
+        fnTheoMean = i => mu;
+        fnTheoSD = i => sd / Math.sqrt(i);
+        metricLabel = 'Average Score Si / i';
+      } else {
+        fnY = (s, i) => s / Math.sqrt(i);
+        fnTheoMean = i => mu * Math.sqrt(i);
+        fnTheoSD = i => sd;
+        metricLabel = 'Normalized Score Si / sqrt(i)';
+      }
+
+      // Build sample indices
+      const indices = [];
+      for (let t = 0; t <= 300; t++) {
+        const i = Math.max(1, Math.round(isLogX ? Math.pow(N, t / 300) : 1 + (N - 1) * t / 300));
+        if (indices.length === 0 || indices[indices.length - 1] !== i) indices.push(i);
+      }
+
+      // Compute y-range
+      let yMin = Infinity, yMax = -Infinity;
+      for (let p = 0; p < numPaths; p++) {
+        for (const i of indices) {
+          const y = fnY(paths[p][i], i);
+          if (y < yMin) yMin = y;
+          if (y > yMax) yMax = y;
+        }
+      }
+      // Include envelope
+      for (const i of indices) {
+        const envHi = fnTheoMean(i) + 2 * fnTheoSD(i);
+        const envLo = fnTheoMean(i) - 2 * fnTheoSD(i);
+        if (envHi > yMax) yMax = envHi;
+        if (envLo < yMin) yMin = envLo;
+      }
+      const yPad = (yMax - yMin) * 0.08 || 1;
+      yMin -= yPad; yMax += yPad;
+
+      const padL = 52, padR = 14, padT = 18, padB = 28;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const mapX = i => padL + ((isLogX ? Math.log10(i) : i) - (isLogX ? 0 : 1)) / ((isLogX ? Math.log10(N) : N - 1) || 1) * plotW;
+      const mapY = y => padT + (1.0 - (y - yMin) / (yMax - yMin)) * plotH;
+
+      // Draw grid
+      ctx.strokeStyle = getCssVar('--ln');
+      ctx.lineWidth = 0.5;
+      for (let g = 0; g <= 4; g++) {
+        const gy = padT + plotH * g / 4;
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+        ctx.fillStyle = getCssVar('--mut');
+        ctx.font = '11px ' + getCssVar('--font-mono');
+        ctx.textAlign = 'right';
+        ctx.fillText(fmt(yMin + (yMax - yMin) * (4 - g) / 4), padL - 4, gy + 4);
+      }
+
+      // Confidence envelope
+      ctx.fillStyle = 'rgba(61, 90, 254, 0.10)';
+      ctx.beginPath();
+      indices.forEach((i, k) => { const y = mapY(fnTheoMean(i) + 2 * fnTheoSD(i)); k === 0 ? ctx.moveTo(mapX(i), y) : ctx.lineTo(mapX(i), y); });
+      for (let k = indices.length - 1; k >= 0; k--) { const i = indices[k]; ctx.lineTo(mapX(i), mapY(fnTheoMean(i) - 2 * fnTheoSD(i))); }
+      ctx.fill();
+
+      // Draw paths
+      const pathColors = [getCssVar('--ac'), getCssVar('--ac2'), getCssVar('--purple'), getCssVar('--cyan')];
+      for (let p = 0; p < numPaths; p++) {
+        ctx.strokeStyle = pathColors[p % pathColors.length];
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        indices.forEach((i, k) => {
+          const y = fnY(paths[p][i], i);
+          k === 0 ? ctx.moveTo(mapX(i), mapY(y)) : ctx.lineTo(mapX(i), mapY(y));
+        });
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      // Theoretical mean
+      ctx.strokeStyle = '#d9480f';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      indices.forEach((i, k) => {
+        const y = fnTheoMean(i);
+        k === 0 ? ctx.moveTo(mapX(i), mapY(y)) : ctx.lineTo(mapX(i), mapY(y));
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Readout
+      const readouts = {
+        tot: `Total Score Si: mean grows linearly as n*mu = ${fmt(N * mu)}, standard deviation as sigma*sqrt(n) = ${fmt(sd * Math.sqrt(N))}. The trumpet-shaped envelope shows widening dispersion.`,
+        avg: `Average Score Si/i: all trajectories compress toward mu = ${mu.toFixed(3)} as the funnel narrows (SD = sigma/sqrt(n) = ${fmt(sd / Math.sqrt(N))}). This is the Law of Large Numbers in action.`,
+        norm: `Normalized Score Si/sqrt(i): the constant-width channel (SD = sigma = ${sd.toFixed(3)}) shows variance stabilization. Neither explosion nor collapse.`
+      };
+      $('trajReadout').textContent = readouts[metric];
+    }
+
+    // Generic Histogram renderer with theoretical Gaussian overlay
+    function drawHistogram(canvasId, dataArr, theoMean, theoSD, title, bins) {
+      const setup = setupCanvas(canvasId);
+      if (!setup) return;
+      const { ctx, w, h } = setup;
+      const len = dataArr.length;
+
+      let minVal = theoMean - 3.8 * theoSD;
+      let maxVal = theoMean + 3.8 * theoSD;
+      for (let i = 0; i < len; i++) {
+        if (dataArr[i] < minVal) minVal = dataArr[i];
+        if (dataArr[i] > maxVal) maxVal = dataArr[i];
+      }
+
+      const binWidth = (maxVal - minVal) / bins;
+      const counts = new Float64Array(bins);
+      for (let i = 0; i < len; i++) {
+        const b = Math.min(bins - 1, Math.max(0, Math.floor((dataArr[i] - minVal) / binWidth)));
+        counts[b]++;
+      }
+
+      const densities = new Float64Array(bins);
+      let maxDensity = 0;
+      for (let b = 0; b < bins; b++) {
+        densities[b] = counts[b] / (len * binWidth);
+        if (densities[b] > maxDensity) maxDensity = densities[b];
+      }
+
+      const normalPeak = 1.0 / (theoSD * Math.sqrt(2.0 * Math.PI));
+      const yMax = Math.max(maxDensity, normalPeak) * 1.15;
+
+      const padL = 36, padR = 12, padT = 20, padB = 26;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      const mapX = val => padL + ((val - minVal) / (maxVal - minVal)) * plotW;
+      const mapY = d => padT + (1.0 - d / yMax) * plotH;
+
+      // Baseline
+      ctx.strokeStyle = getCssVar('--ln');
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL, mapY(0)); ctx.lineTo(w - padR, mapY(0)); ctx.stroke();
+
+      // Histogram bars
+      ctx.fillStyle = 'rgba(61, 90, 254, 0.48)';
+      for (let b = 0; b < bins; b++) {
+        const x0 = mapX(minVal + b * binWidth);
+        const x1 = mapX(minVal + (b + 1) * binWidth);
+        const yTop = mapY(densities[b]);
+        ctx.fillRect(x0 + 0.5, yTop, Math.max(1, x1 - x0 - 1), mapY(0) - yTop);
+      }
+
+      // Theoretical normal curve
+      ctx.strokeStyle = '#d9480f';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      const steps = 100;
+      for (let s = 0; s <= steps; s++) {
+        const xVal = minVal + (maxVal - minVal) * (s / steps);
+        const z = (xVal - theoMean) / theoSD;
+        const normDens = Math.exp(-0.5 * z * z) / (theoSD * Math.sqrt(2.0 * Math.PI));
+        const px = mapX(xVal);
+        const py = mapY(normDens);
+        if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = getCssVar('--mut');
+      ctx.font = '11px ' + getCssVar('--font-mono');
+      ctx.textAlign = 'left'; ctx.fillText(fmt(minVal), padL, h - 8);
+      ctx.textAlign = 'center'; ctx.fillText(fmt(theoMean), mapX(theoMean), h - 8);
+      ctx.textAlign = 'right'; ctx.fillText(fmt(maxVal), w - padR, h - 8);
+    }
+
+    // 2. Multi-Histogram Renderer
+    function renderHistograms() {
+      const { validCP, S, mu, sd, m } = simData;
+      const cpIdx = parseInt($('nCheckSlider').value, 10);
+      const n = validCP[cpIdx];
+      const bins = parseInt($('binsSlider').value, 10);
+
+      $('nCheckDisplay').textContent = n.toLocaleString('en-US');
+      $('binsDisplay').textContent = bins;
+
+      const rawS = S[cpIdx];
+      const avgS = new Float64Array(m);
+      const normS = new Float64Array(m);
+      const sqrtN = Math.sqrt(n);
+
+      for (let j = 0; j < m; j++) {
+        avgS[j] = rawS[j] / n;
+        normS[j] = rawS[j] / sqrtN;
+      }
+
+      drawHistogram('canvasHistTot', rawS, n * mu, sd * sqrtN, 'Total Sn', bins);
+      drawHistogram('canvasHistAvg', avgS, mu, sd / sqrtN, 'Average Sn/n', bins);
+      drawHistogram('canvasHistNorm', normS, mu * sqrtN, sd, 'Normalized Sn/sqrt(n)', bins);
+
+      const momentsTot = calcMoments(rawS);
+      const momentsAvg = calcMoments(avgS);
+      const momentsNorm = calcMoments(normS);
+
+      $('histReadout').textContent = `At checkpoint n = ${n.toLocaleString('en-US')} systems: Total score Sn has mean ${momentsTot.mean.toFixed(1)} (theo ${fmt(n * mu)}) and SD ${momentsTot.sd.toFixed(2)} (theo ${fmt(sd * sqrtN)}); Average score Sn/n has mean ${momentsAvg.mean.toFixed(4)} and SD ${momentsAvg.sd.toFixed(4)} (collapsing as 1/sqrt(n)); Normalized score Sn/sqrt(n) has SD ${momentsNorm.sd.toFixed(3)} (stabilized near theoretical sigma = ${sd.toFixed(3)}).`;
+    }
+
+    // 3. Law of Large Numbers
+    function renderLln() {
+      const { validCP, S, mu, sd, variance, m } = simData;
+      const cpIdx = parseInt($('nCheckSlider').value, 10);
+      const n = validCP[cpIdx];
+      const eps = parseFloat($('epsSlider').value);
+      $('epsDisplay').textContent = eps.toFixed(2);
+
+      // LLN Histogram with tolerance window
+      const setupHist = setupCanvas('canvasLlnHist');
+      if (setupHist) {
+        const { ctx, w, h } = setupHist;
+        const avgS = new Float64Array(m);
+        for (let j = 0; j < m; j++) avgS[j] = S[cpIdx][j] / n;
+
+        const theoSD = sd / Math.sqrt(n);
+        let minVal = mu - Math.max(3.5 * theoSD, 2.0 * eps);
+        let maxVal = mu + Math.max(3.5 * theoSD, 2.0 * eps);
+        const bins = 36;
+        const binW = (maxVal - minVal) / bins;
+        const counts = new Float64Array(bins);
+        for (let j = 0; j < m; j++) {
+          const b = Math.min(bins - 1, Math.max(0, Math.floor((avgS[j] - minVal) / binW)));
+          counts[b]++;
+        }
+
+        let maxCount = 0;
+        for (let b = 0; b < bins; b++) if (counts[b] > maxCount) maxCount = counts[b];
+
+        const padL = 36, padR = 12, padT = 20, padB = 26;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+        const mapX = val => padL + ((val - minVal) / (maxVal - minVal)) * plotW;
+        const mapY = c => padT + (1.0 - c / (maxCount * 1.15)) * plotH;
+
+        // Tolerance window
+        const epsL = mapX(mu - eps);
+        const epsR = mapX(mu + eps);
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+        ctx.fillRect(Math.max(padL, epsL), padT, Math.min(w - padR, epsR) - Math.max(padL, epsL), plotH);
+
+        // Bars
+        for (let b = 0; b < bins; b++) {
+          const centerVal = minVal + (b + 0.5) * binW;
+          const isInside = Math.abs(centerVal - mu) <= eps;
+          ctx.fillStyle = isInside ? getCssVar('--ac') : getCssVar('--rose');
+          const x0 = mapX(minVal + b * binW);
+          const x1 = mapX(minVal + (b + 1) * binW);
+          ctx.fillRect(x0 + 0.5, mapY(counts[b]), Math.max(1, x1 - x0 - 1), mapY(0) - mapY(counts[b]));
+        }
+
+        // Tolerance lines
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(epsL, padT); ctx.lineTo(epsL, h - padB);
+        ctx.moveTo(epsR, padT); ctx.lineTo(epsR, h - padB);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = getCssVar('--fg');
+        ctx.font = '11px ' + getCssVar('--font-mono');
+        ctx.textAlign = 'center';
+        ctx.fillText(`mu-e = ${(mu - eps).toFixed(2)}`, epsL, padT - 6);
+        ctx.fillText(`mu+e = ${(mu + eps).toFixed(2)}`, epsR, padT - 6);
+      }
+
+      // LLN tail probability curve
+      const setupCurve = setupCanvas('canvasLlnCurve');
+      if (setupCurve) {
+        const { ctx, w, h } = setupCurve;
+        const empTailProb = [];
+        const chebyshevBound = [];
+
+        validCP.forEach((cpN, idx) => {
+          let countOutside = 0;
+          for (let j = 0; j < m; j++) {
+            if (Math.abs(S[idx][j] / cpN - mu) > eps) countOutside++;
+          }
+          empTailProb.push(countOutside / m);
+          chebyshevBound.push(Math.min(1.0, variance / (cpN * eps * eps)));
+        });
+
+        // Log-log plot
+        const padL = 50, padR = 14, padT = 18, padB = 28;
+        const plotW = w - padL - padR, plotH = h - padT - padB;
+        const xMin = Math.log10(validCP[0]), xMax = Math.log10(validCP[validCP.length - 1]);
+        const mapX = n => padL + (Math.log10(n) - xMin) / (xMax - xMin) * plotW;
+        const mapY = p => padT + (1.0 - p) * plotH;
+
+        // Grid
+        ctx.strokeStyle = getCssVar('--ln');
+        ctx.lineWidth = 0.5;
+        for (let g = 0; g <= 4; g++) {
+          const gy = padT + plotH * g / 4;
+          ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+          ctx.fillStyle = getCssVar('--mut');
+          ctx.font = '11px ' + getCssVar('--font-mono');
+          ctx.textAlign = 'right';
+          ctx.fillText((1 - g / 4).toFixed(2), padL - 4, gy + 4);
+        }
+
+        // Empirical tail
+        ctx.strokeStyle = getCssVar('--ac');
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        validCP.forEach((cpN, i) => {
+          const y = mapY(empTailProb[i]);
+          i === 0 ? ctx.moveTo(mapX(cpN), y) : ctx.lineTo(mapX(cpN), y);
+        });
+        ctx.stroke();
+
+        // Dots
+        ctx.fillStyle = getCssVar('--ac');
+        validCP.forEach((cpN, i) => {
+          ctx.beginPath();
+          ctx.arc(mapX(cpN), mapY(empTailProb[i]), 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Chebyshev bound
+        ctx.strokeStyle = '#d9480f';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        validCP.forEach((cpN, i) => {
+          const y = mapY(chebyshevBound[i]);
+          i === 0 ? ctx.moveTo(mapX(cpN), y) : ctx.lineTo(mapX(cpN), y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // X-axis labels
+        ctx.fillStyle = getCssVar('--mut');
+        ctx.font = '11px ' + getCssVar('--font-mono');
+        ctx.textAlign = 'center';
+        [1, 10, 100, 1000, 10000].filter(n => n <= simData.N).forEach(n => {
+          ctx.fillText(n.toLocaleString(), mapX(n), h - 8);
+        });
+
+        // Readout
+        const cpIdx2 = parseInt($('nCheckSlider').value, 10);
+        $('llnReadout').textContent = `At n = ${validCP[cpIdx2]}: empirical P(|Sn/n - mu| > ${eps.toFixed(2)}) = ${empTailProb[cpIdx2].toFixed(4)}, Chebyshev bound = ${chebyshevBound[cpIdx2].toFixed(4)}. Both converge to 0 as n increases.`;
+      }
+    }
+
+    // 4. Variance Log-Log Plot
+    function renderVarianceLogLog() {
+      const setup = setupCanvas('canvasVarLogLog');
+      if (!setup) return;
+      const { ctx, w, h } = setup;
+      const { validCP, varS, variance } = simData;
+
+      const padL = 56, padR = 14, padT = 18, padB = 28;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+
+      // Compute all three variance series in log space
+      const seriesConfig = [
+        { label: 'Var(Sn)', sim: (vs, n) => vs, theo: n => n * variance, color: getCssVar('--ac') },
+        { label: 'Var(Sn/n)', sim: (vs, n) => vs / (n * n), theo: n => variance / n, color: '#d9480f' },
+        { label: 'Var(Sn/sqrt(n))', sim: (vs, n) => vs / n, theo: n => variance, color: getCssVar('--purple') }
+      ];
+
+      let yMin = Infinity, yMax = -Infinity;
+      seriesConfig.forEach(s => {
+        validCP.forEach((cpN, idx) => {
+          const sv = Math.log10(Math.max(1e-12, s.sim(varS[idx], cpN)));
+          const tv = Math.log10(Math.max(1e-12, s.theo(cpN)));
+          if (sv < yMin) yMin = sv; if (sv > yMax) yMax = sv;
+          if (tv < yMin) yMin = tv; if (tv > yMax) yMax = tv;
+        });
+      });
+      const yPad = (yMax - yMin) * 0.08 || 1;
+      yMin -= yPad; yMax += yPad;
+
+      const xMin = Math.log10(validCP[0]), xMax = Math.log10(validCP[validCP.length - 1]);
+      const mapX = n => padL + (Math.log10(n) - xMin) / (xMax - xMin || 1) * plotW;
+      const mapY = logV => padT + (1.0 - (logV - yMin) / (yMax - yMin)) * plotH;
+
+      // Grid lines
+      ctx.strokeStyle = getCssVar('--ln');
+      ctx.lineWidth = 0.5;
+      for (let g = 0; g <= 4; g++) {
+        const gy = padT + plotH * g / 4;
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+        ctx.fillStyle = getCssVar('--mut');
+        ctx.font = '11px ' + getCssVar('--font-mono');
+        ctx.textAlign = 'right';
+        const val = yMin + (yMax - yMin) * (4 - g) / 4;
+        ctx.fillText('10^' + val.toFixed(1), padL - 4, gy + 4);
+      }
+
+      // Draw series
+      seriesConfig.forEach(s => {
+        // Simulated points
+        ctx.fillStyle = s.color;
+        validCP.forEach((cpN, idx) => {
+          const logV = Math.log10(Math.max(1e-12, s.sim(varS[idx], cpN)));
+          ctx.beginPath();
+          ctx.arc(mapX(cpN), mapY(logV), 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // Theoretical line
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        validCP.forEach((cpN, idx) => {
+          const logV = Math.log10(Math.max(1e-12, s.theo(cpN)));
+          idx === 0 ? ctx.moveTo(mapX(cpN), mapY(logV)) : ctx.lineTo(mapX(cpN), mapY(logV));
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      });
+
+      // X-axis labels
+      ctx.fillStyle = getCssVar('--mut');
+      ctx.font = '11px ' + getCssVar('--font-mono');
+      ctx.textAlign = 'center';
+      [1, 10, 100, 1000, 10000].filter(n => n <= simData.N).forEach(n => {
+        ctx.fillText(n.toLocaleString(), mapX(n), h - 8);
+      });
+
+      // Readout
+      const cpIdx = parseInt($('nCheckSlider').value, 10);
+      const n = validCP[cpIdx];
+      $('varReadout').textContent = `n = ${n}: Var(Sn) = ${fmt(varS[cpIdx])} (theo ${fmt(n * variance)}) | Var(Sn/n) = ${(varS[cpIdx] / n / n).toPrecision(3)} (theo ${(variance / n).toPrecision(3)}) | Var(Sn/sqrt(n)) = ${fmt(varS[cpIdx] / n)} (theo ${fmt(variance)})`;
+    }
+
+    // 5. Central Limit Theorem
+    function renderClt() {
+      const { validCP, S, mu, sd, ksDistances, m } = simData;
+      const cpIdx = parseInt($('nCheckSlider').value, 10);
+      const n = validCP[cpIdx];
+      const standardize = $('chkStandardize').checked;
+
+      // CLT Histogram
+      const dataArr = new Float64Array(m);
+      for (let j = 0; j < m; j++) {
+        dataArr[j] = standardize ? (S[cpIdx][j] - n * mu) / (sd * Math.sqrt(n)) : S[cpIdx][j] / Math.sqrt(n);
+      }
+
+      const theoMean = standardize ? 0 : mu * Math.sqrt(n);
+      const theoSD = standardize ? 1 : sd;
+      drawHistogram('canvasCltHist', dataArr, theoMean, theoSD, (standardize ? 'Standardized' : 'Sn/sqrt(n)') + ' at n=' + n, 32);
+
+      // KS Distance plot
+      const setupKs = setupCanvas('canvasCltKs');
+      if (setupKs) {
+        const { ctx, w, h } = setupKs;
+        const padL = 50, padR = 14, padT = 18, padB = 28;
+        const plotW = w - padL - padR, plotH = h - padT - padB;
+        const xMin = Math.log10(validCP[0]), xMax = Math.log10(validCP[validCP.length - 1]);
+        const yMin2 = Math.log10(Math.max(1e-4, Math.min(...ksDistances) * 0.5));
+        const yMax2 = Math.log10(Math.max(...ksDistances) * 2);
+        const mapX = n => padL + (Math.log10(n) - xMin) / (xMax - xMin || 1) * plotW;
+        const mapY = logV => padT + (1.0 - (logV - yMin2) / (yMax2 - yMin2 || 1)) * plotH;
+
+        // Grid
+        ctx.strokeStyle = getCssVar('--ln');
+        ctx.lineWidth = 0.5;
+        for (let g = 0; g <= 4; g++) {
+          const gy = padT + plotH * g / 4;
+          ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+        }
+
+        // KS line
+        ctx.strokeStyle = getCssVar('--ac');
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        validCP.forEach((cpN, i) => {
+          const y = mapY(Math.log10(Math.max(1e-6, ksDistances[i])));
+          i === 0 ? ctx.moveTo(mapX(cpN), y) : ctx.lineTo(mapX(cpN), y);
+        });
+        ctx.stroke();
+
+        // Dots
+        ctx.fillStyle = getCssVar('--ac');
+        validCP.forEach((cpN, i) => {
+          ctx.beginPath();
+          ctx.arc(mapX(cpN), mapY(Math.log10(Math.max(1e-6, ksDistances[i]))), 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // MC noise floor
+        const noiseFloor = 0.886 / Math.sqrt(m);
+        ctx.strokeStyle = '#d9480f';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padL, mapY(Math.log10(noiseFloor)));
+        ctx.lineTo(w - padR, mapY(Math.log10(noiseFloor)));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // X-axis labels
+        ctx.fillStyle = getCssVar('--mut');
+        ctx.font = '11px ' + getCssVar('--font-mono');
+        ctx.textAlign = 'center';
+        [1, 10, 100, 1000, 10000].filter(n2 => n2 <= simData.N).forEach(n2 => {
+          ctx.fillText(n2.toLocaleString(), mapX(n2), h - 8);
+        });
+      }
+
+      // Readout
+      const moments = calcMoments(dataArr);
+      $('cltReadout').textContent = `n = ${n}: skewness = ${moments.skew.toFixed(3)} (normal: 0), excess kurtosis = ${moments.kurt.toFixed(3)} (normal: 0), KS distance = ${ksDistances[cpIdx].toFixed(4)}.` +
+        (simData.isBernoulli && !standardize ? ' In Bernoulli without standardizing, the distribution is centered on mu*sqrt(n), not 0.' : '');
+    }
+
+    // 6. Attacker Trace (m effect)
+    function renderAttackerTrace() {
+      const { validCP, S, mu, sd, variance, m } = simData;
+      const cpIdx = parseInt($('nCheckSlider').value, 10);
+      const n = validCP[cpIdx];
+      const mp = parseInt($('subMSlider').value, 10);
+      $('subMDisplay').textContent = mp;
+
+      const setup = setupCanvas('canvasMTrace');
+      if (!setup) return;
+      const { ctx, w, h } = setup;
+
+      // Compute running average
+      const js = [];
+      for (let t = 0; t <= 200; t++) {
+        const j = Math.max(1, Math.round(Math.pow(mp, t / 200)));
+        if (js.length === 0 || js[js.length - 1] !== j) js.push(j);
+      }
+
+      const cumSum = new Float64Array(m + 1);
+      for (let j = 0; j < m; j++) cumSum[j + 1] = cumSum[j] + S[cpIdx][j];
+
+      const runAvg = js.map(j => cumSum[j] / j);
+      const theoMean = n * mu;
+      const bandHi = js.map(j => theoMean + 2 * sd * Math.sqrt(n / j));
+      const bandLo = js.map(j => theoMean - 2 * sd * Math.sqrt(n / j));
+
+      let yMin = Math.min(theoMean, ...runAvg, ...bandLo);
+      let yMax = Math.max(theoMean, ...runAvg, ...bandHi);
+      const yPad = (yMax - yMin) * 0.1 || 10;
+      yMin -= yPad; yMax += yPad;
+
+      const padL = 52, padR = 14, padT = 18, padB = 28;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const xMin = Math.log10(js[0]), xMax = Math.log10(js[js.length - 1]);
+      const mapX = j => padL + (Math.log10(j) - xMin) / (xMax - xMin || 1) * plotW;
+      const mapY = y => padT + (1.0 - (y - yMin) / (yMax - yMin)) * plotH;
+
+      // Grid
+      ctx.strokeStyle = getCssVar('--ln');
+      ctx.lineWidth = 0.5;
+      for (let g = 0; g <= 4; g++) {
+        const gy = padT + plotH * g / 4;
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+        ctx.fillStyle = getCssVar('--mut');
+        ctx.font = '11px ' + getCssVar('--font-mono');
+        ctx.textAlign = 'right';
+        ctx.fillText(fmt(yMin + (yMax - yMin) * (4 - g) / 4), padL - 4, gy + 4);
+      }
+
+      // Confidence band
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+      ctx.beginPath();
+      js.forEach((j, i) => { i === 0 ? ctx.moveTo(mapX(j), mapY(bandHi[i])) : ctx.lineTo(mapX(j), mapY(bandHi[i])); });
+      for (let i = js.length - 1; i >= 0; i--) ctx.lineTo(mapX(js[i]), mapY(bandLo[i]));
+      ctx.fill();
+
+      // Running average line
+      ctx.strokeStyle = getCssVar('--ac');
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      js.forEach((j, i) => { i === 0 ? ctx.moveTo(mapX(j), mapY(runAvg[i])) : ctx.lineTo(mapX(j), mapY(runAvg[i])); });
+      ctx.stroke();
+
+      // Theoretical mean
+      ctx.strokeStyle = '#d9480f';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padL, mapY(theoMean));
+      ctx.lineTo(w - padR, mapY(theoMean));
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Readout
+      const totalScore = cumSum[mp];
+      $('mTraceReadout').textContent = `n = ${n} systems, m' = ${mp} attackers. Aggregate T = ${fmt(totalScore)}; expected m'*n*mu = ${fmt(mp * n * mu)}. Average per attacker = ${fmt(totalScore / mp)} (expected ${fmt(n * mu)}, SE = ${fmt(sd * Math.sqrt(n / mp))}).` +
+        (simData.isBernoulli ? ` Breach fraction over ${mp * n} attempts = ${(totalScore / (mp * n)).toFixed(4)} (p = ${simData.p}).` : '');
+    }
+
+    // 7. Summary Table
+    function renderSummaryTable() {
+      const { validCP, S, varS, mu, variance, ksDistances, m } = simData;
+      const cpIdx = parseInt($('nCheckSlider').value, 10);
+      const eps = parseFloat($('epsSlider').value);
+
+      let html = '';
+      validCP.forEach((n, k) => {
+        let countOutside = 0;
+        for (let j = 0; j < m; j++) {
+          if (Math.abs(S[k][j] / n - mu) > eps) countOutside++;
+        }
+        const empTail = countOutside / m;
+        const cheb = Math.min(1.0, variance / (n * eps * eps));
+        const sel = k === cpIdx ? ' class="sel"' : '';
+
+        html += `<tr${sel}>` +
+          `<td>${n.toLocaleString()}</td>` +
+          `<td>${fmt(varS[k])} / ${fmt(n * variance)}</td>` +
+          `<td>${(varS[k] / n / n).toPrecision(3)} / ${(variance / n).toPrecision(3)}</td>` +
+          `<td>${fmt(varS[k] / n)} / ${fmt(variance)}</td>` +
+          `<td>${empTail.toFixed(3)} / ${cheb.toFixed(3)}</td>` +
+          `<td>${ksDistances[k].toFixed(4)}</td>` +
+          `</tr>`;
+      });
+      $('summaryTableBody').innerHTML = html;
+    }
+
+    // Event listeners
+    $('simModel').addEventListener('change', function () {
+      $('pWrapper').style.display = this.value === 'b' ? 'flex' : 'none';
+    });
+    $('pParam').addEventListener('input', function () {
+      $('pDisplay').textContent = parseFloat(this.value).toFixed(2);
+    });
+    $('btnRunSim').addEventListener('click', runSimulation);
+
+    // Slider/checkbox listeners that trigger re-render
+    ['trajMetric', 'trajK', 'trajLogX', 'nCheckSlider', 'binsSlider', 'epsSlider', 'chkStandardize', 'subMSlider'].forEach(id => {
+      const el = $(id);
+      if (el) el.addEventListener('input', renderAllVisualizations);
+    });
+
+    // Play animation
+    $('btnPlayN').addEventListener('click', function () {
+      if (animTimer) { clearInterval(animTimer); animTimer = null; this.textContent = 'Play Progression'; return; }
+      this.textContent = 'Stop';
+      const slider = $('nCheckSlider');
+      if (parseInt(slider.value) >= parseInt(slider.max)) slider.value = 0;
+      renderAllVisualizations();
+      animTimer = setInterval(() => {
+        if (parseInt(slider.value) >= parseInt(slider.max)) {
+          clearInterval(animTimer); animTimer = null; $('btnPlayN').textContent = 'Play Progression'; return;
+        }
+        slider.value = parseInt(slider.value) + 1;
+        renderAllVisualizations();
+      }, 800);
+    });
+
+    // Resize handler
+    window.addEventListener('resize', () => { if (simData) renderAllVisualizations(); });
+
+    // Initial run
+    runSimulation();
+  </script>
+
+</body>
+
+</html>

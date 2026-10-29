@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Homework 1 pt.2 – From Wallet Seed to Ethereum Address | Diana Buffo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/homework1-pt2.css">
 </head>
+
 <body>
 
   <!-- NAVBAR CENTRATA -->
   <nav class="navbar">
-    <a href="index.html" class="brand-centered" title="Return to Home">
+    <a href="index.html" class="brand-centered" title="Back to Home">
       <span class="brand-title">Statistics</span>
       <span class="brand-subtitle">Diana Buffo</span>
     </a>
@@ -24,16 +28,28 @@
     <div>
       <div class="hw-tag">Homework 1 pt.2</div>
       <h1>From Wallet Seed to Ethereum Address: Hashing, Key Derivation and Cryptographic Primitives</h1>
-      <p>An Ethereum address is built from a 12-word mnemonic in six deterministic steps. Each step uses a different tool because each solves a different problem: key management, public-key cryptography, hashing and error detection.</p>
+      <p>An Ethereum address is built from a 12-word mnemonic in five deterministic steps. Each step uses a different
+        tool because each solves a different problem: key management, public-key cryptography, hashing and error
+        detection.</p>
     </div>
   </header>
 
   <main>
+    <!-- 3 STEP PREVIEW CARDS IN CIMA -->
+    <div class="steps">
+      <div class="card"><b>1. Key management</b><br>BIP-39, BIP-32 and BIP-44 turn 12 words into a seed and then into a
+        private key.</div>
+      <div class="card"><b>2. Public-key cryptography</b><br>secp256k1 turns the private key k into the public key Q =
+        k·G: easy forward, infeasible to reverse.</div>
+      <div class="card"><b>3. Hashing and checksum</b><br>Keccak-256 compresses the public key into a 20-byte address;
+        EIP-55 adds a typo-detecting checksum.</div>
+    </div>
+
     <!-- SECTION 1: THE PIPELINE AT A GLANCE -->
     <h2><span class="n">1</span> The pipeline at a glance</h2>
     <div class="card">
       <p style="margin-top:0">
-        <b>Six steps turn 12 words into one address, each with a different tool.</b>
+        <b>Five steps turn 12 words into one address, each with a different tool.</b>
         Each box is the form the data takes; each arrow is a step, named with its tool and the kind of job it does.
       </p>
 
@@ -52,7 +68,8 @@
           <div class="arrow-line"></div>
           <div class="arrow-info">
             <span class="step-chip chip-sky">BIP-39</span>
-            <span><b>Key management:</b> Words stretched with PBKDF2-HMAC-SHA512 (2048 iterations) into a 512-bit seed</span>
+            <span><b>Key management:</b> Words stretched with PBKDF2-HMAC-SHA512 (2048 iterations) into a 512-bit
+              seed</span>
           </div>
         </div>
 
@@ -88,7 +105,8 @@
           <div class="arrow-line"></div>
           <div class="arrow-info">
             <span class="step-chip chip-purple">secp256k1</span>
-            <span><b>Public-key cryptography:</b> Q = k·G on the curve: easy forward, infeasible to reverse (ECDLP)</span>
+            <span><b>Public-key cryptography:</b> Q = k·G on the curve: easy forward, infeasible to reverse
+              (ECDLP)</span>
           </div>
         </div>
 
@@ -132,7 +150,8 @@
         <div class="pipeline-node node-checksum">
           <div class="pipeline-node-data">
             <span class="pipeline-node-name">6. Checksummed address</span>
-            <span class="pipeline-node-spec" style="color: #065f46;">0x prefix + mixed upper/lower case hex string (e.g. 0x5aAeb605...)</span>
+            <span class="pipeline-node-spec" style="color: #065f46;">0x prefix + mixed upper/lower case hex string (e.g.
+              0x5aAeb605...)</span>
           </div>
           <span class="table-badge badge-emerald">Final Safe Output</span>
         </div>
@@ -145,17 +164,38 @@
     <!-- SECTION 2: ROLE OF EACH STANDARD AND PRIMITIVE -->
     <h2><span class="n">2</span> Role of each standard and primitive</h2>
     <div class="card">
-      <p><b>BIP-39: mnemonic and seed.</b> The wallet generates random entropy (128 bits for 12 words, 256 bits for 24). It appends a short checksum taken from the SHA-256 hash of the entropy (4 or 8 bits) and splits the result into 11-bit groups, each mapped to a word from a fixed list of 2048 words. The mnemonic, plus an optional passphrase, goes through PBKDF2-HMAC-SHA512 (2048 iterations) and produces a 512-bit seed. Same phrase and passphrase always give the same seed.</p>
-      
-      <p><b>BIP-32: hierarchical deterministic (HD) keys.</b> HMAC-SHA512 turns the seed into a master key and a chain code. Every parent key can deterministically derive child keys, which forms a tree. One backup of the seed restores every key. "Hardened" derivation (marked with an apostrophe) stops someone who knows a child private key and the parent's extended public key from recovering the parent private key.</p>
+      <p><b>BIP-39: mnemonic and seed.</b> The wallet generates random entropy (128 bits for 12 words, 256 bits for 24).
+        It appends a short checksum taken from the SHA-256 hash of the entropy (4 or 8 bits) and splits the result into
+        11-bit groups, each mapped to a word from a fixed list of 2048 words. The mnemonic, plus an optional passphrase,
+        goes through PBKDF2-HMAC-SHA512 (2048 iterations) and produces a 512-bit seed. Same phrase and passphrase always
+        give the same seed.</p>
 
-      <p><b>BIP-44: standard derivation paths.</b> It fixes the structure <code>m / purpose' / coin_type' / account' / change / address_index</code>. For Ethereum the first account is <code>m/44'/60'/0'/0/0</code> (60 = Ethereum, 0 = Bitcoin). Thanks to this standard, MetaMask, Rabby, Exodus or Rainbow find the same addresses from the same mnemonic.</p>
+      <p><b>BIP-32: hierarchical deterministic (HD) keys.</b> HMAC-SHA512 turns the seed into a master key and a chain
+        code. Every parent key can deterministically derive child keys, which forms a tree. One backup of the seed
+        restores every key. "Hardened" derivation (marked with an apostrophe) stops someone who knows a child private
+        key and the parent's extended public key from recovering the parent private key.</p>
 
-      <p><b>secp256k1: public-key cryptography.</b> The elliptic curve <code>y² = x³ + 7</code> over a finite field of about 2²⁵⁶ elements. The public key is <code>Q = k·G</code>, where k is the private key and G is the fixed base point. Going back from Q to k means solving the Elliptic Curve Discrete Logarithm Problem (ECDLP), which is considered infeasible. The same curve is used for digital signatures (ECDSA): whoever knows k signs, anyone can verify with Q. HMWK 1 shows this idea on a toy curve.</p>
+      <p><b>BIP-44: standard derivation paths.</b> It fixes the structure
+        <code>m / purpose' / coin_type' / account' / change / address_index</code>. For Ethereum the first account is
+        <code>m/44'/60'/0'/0/0</code> (60 = Ethereum, 0 = Bitcoin). Thanks to this standard, MetaMask, Rabby, Exodus or
+        Rainbow find the same addresses from the same mnemonic.</p>
 
-      <p><b>Keccak-256: hashing.</b> The address is the last 20 bytes (40 hex characters) of the Keccak-256 hash of the 64-byte public key (x ‖ y, without the 0x04 prefix).</p>
+      <p><b>secp256k1: public-key cryptography.</b> The elliptic curve <code>y² = x³ + 7</code> over a finite field of
+        about 2²⁵⁶ elements. The public key is <code>Q = k·G</code>, where k is the private key and G is the fixed base
+        point. Going back from Q to k means solving the Elliptic Curve Discrete Logarithm Problem (ECDLP), which is
+        considered infeasible. The same curve is used for digital signatures (ECDSA): whoever knows k signs, anyone can
+        verify with Q. HMWK 1 shows this idea on a toy curve.</p>
 
-      <p style="margin-bottom:0"><b>EIP-55: checksum.</b> Compute Keccak-256 of the lowercase address (without 0x, as ASCII text). For each letter a–f of the address, if the matching hex digit of the hash is 8 or more, write the letter in uppercase. Example from the EIP-55 specification: <code>0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed</code>. The value of the address does not change, but a typo breaks the capitalization pattern and the wallet can warn the user. A random typo goes unnoticed with probability about 2⁻ⁿ, where n is the number of letters in the address (on average about 15, so roughly 1 in 32,000).</p>
+      <p><b>Keccak-256: hashing.</b> The address is the last 20 bytes (40 hex characters) of the Keccak-256 hash of the
+        64-byte public key (x ‖ y, without the 0x04 prefix).</p>
+
+      <p style="margin-bottom:0"><b>EIP-55: checksum.</b> Compute Keccak-256 of the lowercase address (without 0x, as
+        ASCII text). For each letter a–f of the address, if the matching hex digit of the hash is 8 or more, write the
+        letter in uppercase. Example from the EIP-55 specification:
+        <code>0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed</code>. The value of the address does not change, but a typo
+        breaks the capitalization pattern and the wallet can warn the user. A random typo goes unnoticed with
+        probability about 2⁻ⁿ, where n is the number of letters in the address (on average about 15, so roughly 1 in
+        32,000).</p>
     </div>
 
     <!-- SECTION 3: FIVE CONCEPTS THAT ARE EASY TO CONFUSE -->
@@ -171,32 +211,39 @@
         </thead>
         <tbody>
           <tr>
-            <td><b>Key generation</b> <span class="table-badge badge-sky" style="font-size:0.75rem; margin-left:4px;">Generation</span></td>
+            <td><b>Key generation</b> <span class="table-badge badge-sky"
+                style="font-size:0.75rem; margin-left:4px;">Generation</span></td>
             <td>Creating something new and random</td>
             <td>The initial entropy of BIP-39</td>
           </tr>
           <tr>
-            <td><b>Key derivation</b> <span class="table-badge badge-indigo" style="font-size:0.75rem; margin-left:4px;">Derivation</span></td>
+            <td><b>Key derivation</b> <span class="table-badge badge-indigo"
+                style="font-size:0.75rem; margin-left:4px;">Derivation</span></td>
             <td>Computing keys deterministically from an existing secret</td>
             <td>PBKDF2 (seed), BIP-32 and BIP-44 (child keys)</td>
           </tr>
           <tr>
-            <td><b>Public-key cryptography</b> <span class="table-badge badge-purple" style="font-size:0.75rem; margin-left:4px;">Asymmetric</span></td>
+            <td><b>Public-key cryptography</b> <span class="table-badge badge-purple"
+                style="font-size:0.75rem; margin-left:4px;">Asymmetric</span></td>
             <td>A private/public key pair for signing and verifying</td>
             <td>secp256k1</td>
           </tr>
           <tr>
-            <td><b>Hashing</b> <span class="table-badge badge-orange" style="font-size:0.75rem; margin-left:4px;">One-way</span></td>
+            <td><b>Hashing</b> <span class="table-badge badge-orange"
+                style="font-size:0.75rem; margin-left:4px;">One-way</span></td>
             <td>A keyless, one-way function with a fixed-size output</td>
             <td>Keccak-256 (and SHA-256/SHA-512 inside BIP-39 and BIP-32)</td>
           </tr>
           <tr>
-            <td><b>Checksum</b> <span class="table-badge badge-emerald" style="font-size:0.75rem; margin-left:4px;">Integrity</span></td>
+            <td><b>Checksum</b> <span class="table-badge badge-emerald"
+                style="font-size:0.75rem; margin-left:4px;">Integrity</span></td>
             <td>Detects accidental errors; protects nothing against attackers</td>
             <td>BIP-39 checksum, EIP-55</td>
           </tr>
           <tr>
-            <td><b>Encoding</b> <span class="table-badge" style="font-size:0.75rem; margin-left:4px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">Format</span></td>
+            <td><b>Encoding</b> <span class="table-badge"
+                style="font-size:0.75rem; margin-left:4px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">Format</span>
+            </td>
             <td>Another way to write the same data; no security at all</td>
             <td>BIP-39 words, hexadecimal, the 0x prefix</td>
           </tr>
@@ -205,7 +252,8 @@
     </div>
 
     <div class="card card-callout">
-      <b>Key takeaway:</b> Checksums and encodings give neither confidentiality nor authenticity. A hash is not encryption (it cannot be decrypted) and it is not a signature.
+      <b>Key takeaway:</b> Checksums and encodings give neither confidentiality nor authenticity. A hash is not
+      encryption (it cannot be decrypted) and it is not a signature.
     </div>
 
     <!-- SECTION 4: HISTORICAL CONTEXT & SVG TIMELINE -->
@@ -218,90 +266,96 @@
 
       <!-- SVG TIMELINE GRAPH -->
       <div class="svg-container">
-        <svg viewBox="0 0 860 320" role="img" aria-label="Historical timeline of cryptographic primitives and wallet standards">
+        <svg viewBox="0 0 860 320" role="img"
+          aria-label="Historical timeline of cryptographic primitives and wallet standards">
           <!-- Time Grid -->
-          <line x1="80" y1="230" x2="800" y2="230" stroke="#cbd5e1" stroke-width="2"/>
-          
+          <line x1="80" y1="230" x2="800" y2="230" stroke="#cbd5e1" stroke-width="2" />
+
           <!-- Decade ticks & labels (1975 to 2020: 800-80 = 720px for 45 years -> 16px/year) -->
           <!-- 1975=80, 1980=160, 1990=320, 2000=480, 2010=640, 2020=800 -->
-          <line x1="80" y1="230" x2="80" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="80" y1="230" x2="80" y2="238" stroke="#94a3b8" stroke-width="1.5" />
           <text x="80" y="254" font-size="11" text-anchor="middle" fill="#64748b">1975</text>
 
-          <line x1="160" y1="230" x2="160" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="160" y1="230" x2="160" y2="238" stroke="#94a3b8" stroke-width="1.5" />
           <text x="160" y="254" font-size="11" text-anchor="middle" fill="#64748b">1980</text>
 
-          <line x1="320" y1="230" x2="320" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="320" y1="230" x2="320" y2="238" stroke="#94a3b8" stroke-width="1.5" />
           <text x="320" y="254" font-size="11" text-anchor="middle" fill="#64748b">1990</text>
 
-          <line x1="480" y1="230" x2="480" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="480" y1="230" x2="480" y2="238" stroke="#94a3b8" stroke-width="1.5" />
           <text x="480" y="254" font-size="11" text-anchor="middle" fill="#64748b">2000</text>
 
-          <line x1="640" y1="230" x2="640" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="640" y1="230" x2="640" y2="238" stroke="#94a3b8" stroke-width="1.5" />
           <text x="640" y="254" font-size="11" text-anchor="middle" fill="#64748b">2010</text>
 
-          <line x1="800" y1="230" x2="800" y2="238" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="800" y1="230" x2="800" y2="238" stroke="#94a3b8" stroke-width="1.5" />
           <text x="800" y="254" font-size="11" text-anchor="middle" fill="#64748b">2020</text>
 
           <!-- Vertical guide grid lines -->
-          <line x1="160" y1="40" x2="160" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-          <line x1="320" y1="40" x2="320" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-          <line x1="480" y1="40" x2="480" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
-          <line x1="640" y1="40" x2="640" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="160" y1="40" x2="160" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3" />
+          <line x1="320" y1="40" x2="320" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3" />
+          <line x1="480" y1="40" x2="480" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3" />
+          <line x1="640" y1="40" x2="640" y2="230" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="3 3" />
 
           <!-- 1. 1977: RSA (pos = 80 + 2*16 = 112) -->
-          <line x1="112" y1="70" x2="112" y2="230" stroke="#e8472b" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="112" cy="70" r="6" fill="#e8472b"/>
-          <rect x="70" y="44" width="84" height="22" rx="4" fill="#fee2e2" stroke="#e8472b"/>
+          <line x1="112" y1="70" x2="112" y2="230" stroke="#e8472b" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="112" cy="70" r="6" fill="#e8472b" />
+          <rect x="70" y="44" width="84" height="22" rx="4" fill="#fee2e2" stroke="#e8472b" />
           <text x="112" y="59" font-size="10.5" font-weight="700" text-anchor="middle" fill="#b91c1c">RSA (1977)</text>
 
           <!-- 2. 2001: SHA-2 / SHA-512 (pos = 480 + 1*16 = 496) -->
-          <line x1="496" y1="95" x2="496" y2="230" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="496" cy="95" r="6" fill="#10b981"/>
-          <rect x="430" y="70" width="132" height="22" rx="4" fill="#d1fae5" stroke="#10b981"/>
-          <text x="496" y="85" font-size="10" font-weight="700" text-anchor="middle" fill="#047857">SHA-2/512 (2001)</text>
+          <line x1="496" y1="95" x2="496" y2="230" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="496" cy="95" r="6" fill="#10b981" />
+          <rect x="430" y="70" width="132" height="22" rx="4" fill="#d1fae5" stroke="#10b981" />
+          <text x="496" y="85" font-size="10" font-weight="700" text-anchor="middle" fill="#047857">SHA-2/512
+            (2001)</text>
 
           <!-- 3. 2012: BIP-32 (pos = 640 + 2*16 = 672) -->
-          <line x1="672" y1="60" x2="672" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="672" cy="60" r="6" fill="#3b82f6"/>
-          <rect x="625" y="36" width="94" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
-          <text x="672" y="50" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-32 (2012)</text>
+          <line x1="672" y1="60" x2="672" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="672" cy="60" r="6" fill="#3b82f6" />
+          <rect x="625" y="36" width="94" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6" />
+          <text x="672" y="50" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-32
+            (2012)</text>
 
           <!-- 4. 2013: BIP-39 (pos = 640 + 3*16 = 688) -->
-          <line x1="688" y1="105" x2="688" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="688" cy="105" r="6" fill="#3b82f6"/>
-          <rect x="642" y="82" width="92" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
-          <text x="688" y="96" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-39 (2013)</text>
+          <line x1="688" y1="105" x2="688" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="688" cy="105" r="6" fill="#3b82f6" />
+          <rect x="642" y="82" width="92" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6" />
+          <text x="688" y="96" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-39
+            (2013)</text>
 
           <!-- 5. 2014: BIP-44 (pos = 640 + 4*16 = 704) -->
-          <line x1="704" y1="150" x2="704" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="704" cy="150" r="6" fill="#3b82f6"/>
-          <rect x="658" y="128" width="92" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6"/>
-          <text x="704" y="142" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-44 (2014)</text>
+          <line x1="704" y1="150" x2="704" y2="230" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="704" cy="150" r="6" fill="#3b82f6" />
+          <rect x="658" y="128" width="92" height="20" rx="4" fill="#dbeafe" stroke="#3b82f6" />
+          <text x="704" y="142" font-size="9.5" font-weight="700" text-anchor="middle" fill="#1d4ed8">BIP-44
+            (2014)</text>
 
-          <!-- 6. 2015: SHA-3 / Keccak (pos = 640 + 5*16 = 720) -->
-          <line x1="720" y1="50" x2="720" y2="230" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="720" cy="50" r="6" fill="#10b981"/>
-          <rect x="675" y="26" width="90" height="20" rx="4" fill="#d1fae5" stroke="#10b981"/>
-          <text x="720" y="40" font-size="9.5" font-weight="700" text-anchor="middle" fill="#047857">Keccak (2015)</text>
+          <!-- 6. 2015: SHA-3 standard, based on Keccak (pos = 640 + 5*16 = 720) -->
+          <line x1="720" y1="50" x2="720" y2="230" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="720" cy="50" r="6" fill="#10b981" />
+          <rect x="675" y="26" width="90" height="20" rx="4" fill="#d1fae5" stroke="#10b981" />
+          <text x="720" y="40" font-size="9.5" font-weight="700" text-anchor="middle" fill="#047857">SHA-3 (2015)</text>
 
           <!-- 7. 2016: EIP-55 (pos = 640 + 6*16 = 736) -->
-          <line x1="736" y1="95" x2="736" y2="230" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="736" cy="95" r="6" fill="#7c3aed"/>
-          <rect x="695" y="72" width="82" height="20" rx="4" fill="#ede9fe" stroke="#7c3aed"/>
-          <text x="736" y="86" font-size="9.5" font-weight="700" text-anchor="middle" fill="#6d28d9">EIP-55 (2016)</text>
+          <line x1="736" y1="95" x2="736" y2="230" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4 3" />
+          <circle cx="736" cy="95" r="6" fill="#7c3aed" />
+          <rect x="695" y="72" width="82" height="20" rx="4" fill="#ede9fe" stroke="#7c3aed" />
+          <text x="736" y="86" font-size="9.5" font-weight="700" text-anchor="middle" fill="#6d28d9">EIP-55
+            (2016)</text>
 
           <!-- LEGEND -->
           <g transform="translate(140, 285)">
-            <circle cx="0" cy="0" r="5" fill="#e8472b"/>
+            <circle cx="0" cy="0" r="5" fill="#e8472b" />
             <text x="10" y="4" font-size="11" fill="#475569">Public-key crypto</text>
 
-            <circle cx="150" cy="0" r="5" fill="#10b981"/>
+            <circle cx="150" cy="0" r="5" fill="#10b981" />
             <text x="160" y="4" font-size="11" fill="#475569">Hash functions</text>
 
-            <circle cx="280" cy="0" r="5" fill="#3b82f6"/>
+            <circle cx="280" cy="0" r="5" fill="#3b82f6" />
             <text x="290" y="4" font-size="11" fill="#475569">Wallet standards (BIP)</text>
 
-            <circle cx="440" cy="0" r="5" fill="#7c3aed"/>
+            <circle cx="440" cy="0" r="5" fill="#7c3aed" />
             <text x="450" y="4" font-size="11" fill="#475569">Checksum (EIP)</text>
           </g>
         </svg>
@@ -309,19 +363,27 @@
 
       <p class="mut" style="text-align:center; margin-top:2px;">timeline · 7 milestones, 1977 to 2016, to scale</p>
 
-      <p><b>Colours match the pipeline picture.</b> SHA-512 (part of SHA-2) is used inside BIP-39 and BIP-32, and Keccak won the NIST competition in 2012 before becoming SHA-3.</p>
-      <p style="margin-bottom:0"><b>The logical order is:</b> basic cryptographic tools first (RSA, SHA-2), then the key-management standards born in Bitcoin (BIP), then Ethereum-specific choices (Keccak-256, EIP-55). Ethereum launched in 2015, before the final SHA-3 standard, and adopted the earlier Keccak version. It also inherited the secp256k1 curve from Bitcoin.</p>
+      <p><b>Colours match the pipeline picture.</b> SHA-512 (part of SHA-2) is used inside BIP-39 and BIP-32. Keccak won
+        the NIST competition in 2012 and was standardized as SHA-3 in 2015 (the milestone shown on the timeline).</p>
+      <p style="margin-bottom:0"><b>The logical order is:</b> basic cryptographic tools first (RSA, SHA-2), then the
+        key-management standards born in Bitcoin (BIP), then Ethereum-specific choices (Keccak-256, EIP-55). Ethereum
+        launched in 2015, before the final SHA-3 standard, and adopted the earlier Keccak version. It also inherited the
+        secp256k1 curve from Bitcoin.</p>
     </div>
 
     <!-- SECTION 5: SHA-2 / SHA-512 VS KECCAK / SHA-3 -->
     <h2><span class="n">5</span> SHA-2 / SHA-512 versus Keccak / SHA-3</h2>
     <div class="card">
       <p style="margin-top:0">
-        Both are cryptographic hash families, but their internal designs are unrelated. <b>SHA-2 (2001)</b> uses the <i>Merkle–Damgård construction</i>. <b>SHA-3</b> is based on Keccak, which uses the <i>sponge construction</i>, and was chosen as an independent alternative in case SHA-2 were ever weakened.
+        Both are cryptographic hash families, but their internal designs are unrelated. <b>SHA-2 (2001)</b> uses the
+        <i>Merkle–Damgård construction</i>. <b>SHA-3</b> is based on Keccak, which uses the <i>sponge construction</i>,
+        and was chosen as an independent alternative in case SHA-2 were ever weakened.
       </p>
 
       <p>
-        Ethereum uses <b>Keccak-256</b>, which is <b>not identical to SHA3-256</b>. During standardization NIST changed the domain-separation and padding rule (SHA3 appends the bits <code>01</code> before padding; original Keccak does not). The internal permutation is identical, but the final outputs completely differ:
+        Ethereum uses <b>Keccak-256</b>, which is <b>not identical to SHA3-256</b>. During standardization NIST changed
+        the domain-separation and padding rule (SHA3 appends the bits <code>01</code> before padding; original Keccak
+        does not). The internal permutation is identical, but the final outputs completely differ:
       </p>
 
       <div class="wrap" style="margin: 14px 0;">
@@ -346,7 +408,8 @@
       </div>
 
       <p class="mut" style="margin-bottom:0">
-        <b>Critical consequence:</b> In practice, using SHA3-256 instead of Keccak-256 produces completely wrong Ethereum addresses.
+        <b>Critical consequence:</b> In practice, using SHA3-256 instead of Keccak-256 produces completely wrong
+        Ethereum addresses.
       </p>
     </div>
 
@@ -355,13 +418,17 @@
     <div class="card">
       <p style="margin-top:0">Each tool in the pipeline has a specific mathematical specialty:</p>
       <ul style="padding-left: 20px; margin-bottom: 16px;">
-        <li><b>BIP-39 / BIP-32 / BIP-44 → key management:</b> one backup, an ordered key tree, compatibility across wallets.</li>
-        <li><b>secp256k1 → private/public relation and signatures:</b> needs rich algebraic group structure that allows public verification, which a hash cannot offer.</li>
+        <li><b>BIP-39 / BIP-32 / BIP-44 → key management:</b> one backup, an ordered key tree, compatibility across
+          wallets.</li>
+        <li><b>secp256k1 → private/public relation and signatures:</b> needs rich algebraic group structure that allows
+          public verification, which a hash cannot offer.</li>
         <li><b>Keccak-256 → hashing:</b> compresses the 64-byte public key into 20 uniform, scrambled bytes.</li>
-        <li><b>EIP-55 → error detection:</b> adds no extra length (still 40 characters) and is fully backwards-compatible with lowercase addresses.</li>
+        <li><b>EIP-55 → error detection:</b> adds no extra length (still 40 characters) and is fully
+          backwards-compatible with lowercase addresses.</li>
       </ul>
       <p class="card-callout card" style="margin:0;">
-        <b>Separation of Roles Principle:</b> Every primitive is optimized for one task, can be analyzed and audited independently, and a weakness in one layer stays confined to that layer.
+        <b>Separation of Roles Principle:</b> Every primitive is optimized for one task, can be analyzed and audited
+        independently, and a weakness in one layer stays confined to that layer.
       </p>
     </div>
 
@@ -369,10 +436,16 @@
     <h2><span class="n">7</span> Statistical properties</h2>
     <div class="card">
       <ul style="padding-left: 20px; margin: 0;">
-        <li><b>Hash functions (Keccak, SHA-2):</b> <i>Avalanche effect</i> (about 50% of output bits flip when one input bit changes), output indistinguishable from uniform, no visible correlation between input and output. Two very similar public keys produce completely unrelated addresses.</li>
-        <li style="margin-top: 10px;"><b>secp256k1:</b> <i>Not a hash.</i> The relation <code>(k+1)G = kG + G</code> is strictly algebraic; security comes solely from the hardness of the ECDLP, not from scrambling bits (as explored in HMWK 1).</li>
-        <li style="margin-top: 10px;"><b>Mnemonic and seed:</b> Security depends strictly on the entropy: 128 bits for 12 words (2¹²⁸ possibilities). The 512-bit seed adds no extra entropy beyond the original phrase.</li>
-        <li style="margin-top: 10px;"><b>EIP-55:</b> The capitalization pattern is a pseudo-random sample of hash bits, so each letter has an independent ~1/2 probability of being uppercase.</li>
+        <li><b>Hash functions (Keccak, SHA-2):</b> <i>Avalanche effect</i> (about 50% of output bits flip when one input
+          bit changes), output indistinguishable from uniform, no visible correlation between input and output. Two very
+          similar public keys produce completely unrelated addresses.</li>
+        <li style="margin-top: 10px;"><b>secp256k1:</b> <i>Not a hash.</i> The relation <code>(k+1)G = kG + G</code> is
+          strictly algebraic; security comes solely from the hardness of the ECDLP, not from scrambling bits (as
+          explored in HMWK 1).</li>
+        <li style="margin-top: 10px;"><b>Mnemonic and seed:</b> Security depends strictly on the entropy: 128 bits for
+          12 words (2¹²⁸ possibilities). The 512-bit seed adds no extra entropy beyond the original phrase.</li>
+        <li style="margin-top: 10px;"><b>EIP-55:</b> The capitalization pattern is a pseudo-random sample of hash bits,
+          so each letter has an independent ~1/2 probability of being uppercase.</li>
       </ul>
     </div>
 
@@ -380,13 +453,15 @@
     <h2><span class="n">8</span> Hands-on test with a wallet</h2>
     <div class="card">
       <p style="margin-top:0">
-        Use a throwaway wallet with no funds, never your real recovery phrase. A public test mnemonic used by the Hardhat development tool is:
+        Use a throwaway wallet with no funds, never your real recovery phrase. A public test mnemonic used by the
+        Hardhat development tool is:
       </p>
       <div class="hex-display" style="font-weight:700; color:#1e1b4b;">
         test test test test test test test test test test test junk
       </div>
       <p>
-        Importing it into MetaMask, Rabby or a similar wallet gives the first account (path <code>m/44'/60'/0'/0/0</code>):<br>
+        Importing it into MetaMask, Rabby or a similar wallet gives the first account (path
+        <code>m/44'/60'/0'/0/0</code>):<br>
         <code>0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</code>, which already exhibits the EIP-55 capitalization.
       </p>
       <b>Steps to document with screenshots:</b>
@@ -403,7 +478,10 @@
     <h2><span class="n">9</span> Putting it all together: a complete worked example</h2>
     <div class="card">
       <p style="margin-top:0">
-        We run the whole pipeline on the public test mnemonic from section 8. Every value below was computed with a short script, and the final address is the well-known address of this test account:
+        We run the whole pipeline on the public test mnemonic from section 8. Every value below was computed with a
+        short script, and the final address is the well-known address of this test account. Here BIP-32 (master key) and
+        BIP-44 (path) are shown as two separate steps, which is why the example has six numbered steps while the
+        pipeline in section 1 has five arrows.
       </p>
 
       <!-- STEP 0 -->
@@ -412,7 +490,8 @@
           <b>Step 0: Starting point (key generation)</b>
           <span class="step-badge badge-sky">Entropy</span>
         </div>
-        <p class="mut" style="margin:0 0 6px">In a real wallet entropy is random; here the phrase is fixed so the example is repeatable.</p>
+        <p class="mut" style="margin:0 0 6px">In a real wallet entropy is random; here the phrase is fixed so the
+          example is repeatable.</p>
         <div class="hex-display">test test test test test test test test test test test junk</div>
       </div>
 
@@ -422,8 +501,11 @@
           <b>Step 1: BIP-39, words to seed (derivation)</b>
           <span class="step-badge badge-indigo">PBKDF2-HMAC-SHA512</span>
         </div>
-        <p class="mut" style="margin:0 0 6px">PBKDF2 with mnemonic as password, salt "mnemonic", 2048 iterations (64 bytes):</p>
-        <div class="hex-display">9dfc3c64c2f8bede1533b6a79f8570e5943e0b8fd1cf77107adf7b72cef42185d564a3aee24cab43f80e3c4538087d70fc824eabbad596a23c97b6ee8322ccc0</div>
+        <p class="mut" style="margin:0 0 6px">PBKDF2 with mnemonic as password, salt "mnemonic", 2048 iterations (64
+          bytes):</p>
+        <div class="hex-display">
+          9dfc3c64c2f8bede1533b6a79f8570e5943e0b8fd1cf77107adf7b72cef42185d564a3aee24cab43f80e3c4538087d70fc824eabbad596a23c97b6ee8322ccc0
+        </div>
       </div>
 
       <!-- STEP 2 -->
@@ -432,8 +514,10 @@
           <b>Step 2: BIP-32, seed to master key (derivation)</b>
           <span class="step-badge badge-purple">HMAC-SHA512</span>
         </div>
-        <p class="mut" style="margin:0 0 6px">HMAC-SHA512 with key "Bitcoin seed". Left 32 bytes = master key, right 32 bytes = chain code:</p>
-        <div class="hex-display">master key: ada5f7928ef8f684afa7b06929b5d1f653e486b52077ba9d798eded96c851ade<br>chain code: a6001a33d7f033eb872b5e95587fe2053a2df53d546ba932637f2ab7a8cff940</div>
+        <p class="mut" style="margin:0 0 6px">HMAC-SHA512 with key "Bitcoin seed". Left 32 bytes = master key, right 32
+          bytes = chain code:</p>
+        <div class="hex-display">master key: ada5f7928ef8f684afa7b06929b5d1f653e486b52077ba9d798eded96c851ade<br>chain
+          code: a6001a33d7f033eb872b5e95587fe2053a2df53d546ba932637f2ab7a8cff940</div>
       </div>
 
       <!-- STEP 3 -->
@@ -442,7 +526,8 @@
           <b>Step 3: BIP-44, follow path m/44'/60'/0'/0/0 (derivation)</b>
           <span class="step-badge badge-rose">Child Derivation</span>
         </div>
-        <p class="mut" style="margin:0 0 6px">Five child derivations (first three hardened). Produces the Ethereum private key:</p>
+        <p class="mut" style="margin:0 0 6px">Five child derivations (first three hardened). Produces the Ethereum
+          private key:</p>
         <div class="hex-display">ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</div>
       </div>
 
@@ -453,7 +538,8 @@
           <span class="step-badge badge-amber">Q = k · G</span>
         </div>
         <p class="mut" style="margin:0 0 6px">Elliptic curve point multiplication Q = k·G with 256-bit arithmetic:</p>
-        <div class="hex-display">x = 8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75<br>y = 3547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5</div>
+        <div class="hex-display">x = 8318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed75<br>y =
+          3547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5</div>
       </div>
 
       <!-- STEP 5 -->
@@ -462,8 +548,11 @@
           <b>Step 5: Keccak-256, public key to address (hashing)</b>
           <span class="step-badge badge-orange">Keccak-256 Truncation</span>
         </div>
-        <p class="mut" style="margin:0 0 6px">Hash 64 bytes (x ‖ y), keep the last 20 bytes (last 40 hex characters):</p>
-        <div class="hex-display">Keccak-256: c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb92266<br>address:    f39fd6e51aad88f6f4ce6ab8827279cfffb92266</div>
+        <p class="mut" style="margin:0 0 6px">Hash 64 bytes (x ‖ y), keep the last 20 bytes (last 40 hex characters):
+        </p>
+        <div class="hex-display">Keccak-256:
+          c1ffd3cfee2d9e5cd67643f8f39fd6e51aad88f6f4ce6ab8827279cfffb92266<br>address:
+          f39fd6e51aad88f6f4ce6ab8827279cfffb92266</div>
       </div>
 
       <!-- STEP 6 -->
@@ -475,7 +564,8 @@
         <p class="mut" style="margin:0 0 6px">
           Keccak-256 hash of lowercase address. For each letter a–f: if matching hash digit ≥ 8 → uppercase:
         </p>
-        <div class="hex-display">hash:   19682d67812181b19d61f09263ab9e723b258d8d7949f68794d8916171bea91d<br>result: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</div>
+        <div class="hex-display">hash: 19682d67812181b19d61f09263ab9e723b258d8d7949f68794d8916171bea91d<br>result:
+          0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</div>
 
         <!-- INTERACTIVE EIP-55 LETTER-BY-LETTER INSPECTOR -->
         <h4 style="margin: 16px 0 6px; font-size: 0.95rem;">Interactive EIP-55 character mapping:</h4>
@@ -483,7 +573,8 @@
         <div class="eip-legend" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">
           <span class="table-badge badge-emerald">Uppercase (hash nibble ≥ 8)</span>
           <span class="table-badge badge-sky">Lowercase (hash nibble &lt; 8)</span>
-          <span class="table-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">Digit (0–9 unchanged)</span>
+          <span class="table-badge" style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1;">Digit (0–9
+            unchanged)</span>
         </div>
       </div>
 
@@ -498,7 +589,8 @@
           Key B (...ff81): 0xdd11751cdd3f6eff01b1f6151b640685bfa5db4a
         </div>
         <div style="display:inline-flex; align-items:center; gap:8px; margin: 6px 0 10px;">
-          <span class="table-badge badge-rose" style="font-size:0.9rem; padding:5px 12px;">53.1% Bit Difference (85/160 bits flipped)</span>
+          <span class="table-badge badge-rose" style="font-size:0.9rem; padding:5px 12px;">53.1% Bit Difference (85/160
+            bits flipped)</span>
           <span class="table-badge badge-indigo">Avalanche Effect</span>
         </div>
         <div class="bit-diff-bar">
@@ -511,17 +603,22 @@
           <span>160 bits flipped</span>
         </div>
         <p style="margin: 10px 0 0; font-size: 0.92rem;">
-          <b>Result:</b> <b>85 of the 160 address bits differ (53.1%)</b>, remarkably close to the ideal 50% avalanche effect of a cryptographic hash function! Inside secp256k1 alone the relation (k+1)G = kG + G is visible; the Keccak-256 hash completely hides it.
+          <b>Result:</b> <b>85 of the 160 address bits differ (53.1%)</b>, remarkably close to the ideal 50% avalanche
+          effect of a cryptographic hash function! Inside secp256k1 alone the relation (k+1)G = kG + G is visible; the
+          Keccak-256 hash completely hides it.
         </p>
       </div>
 
       <div class="card card-callout" style="margin-top:16px;">
         <b>Key Observations from the Example:</b>
         <ol style="padding-left: 20px; margin: 6px 0 0;">
-          <li><b>One random choice, then only deterministic steps.</b> Randomness is only in step 0; steps 1 to 6 are derivation, curve math, hashing and checksum.</li>
+          <li><b>One random choice, then only deterministic steps.</b> Randomness is only in step 0; steps 1 to 6 are
+            derivation, curve math, hashing and checksum.</li>
           <li><b>Avalanche in action:</b> 53.1% bit difference hides algebraic curve relationships.</li>
-          <li><b>Keccak-256 ≠ SHA3-256:</b> Hashing the same public key with NIST SHA3-256 gives <code>8ed30a8892bc3cb25ca6b52d045b51f176f55913</code>, a completely wrong address.</li>
-          <li><b>Everything moves forward only,</b> except the checksum which can be reversed simply by lowercasing.</li>
+          <li><b>Keccak-256 ≠ SHA3-256:</b> Hashing the same public key with NIST SHA3-256 gives
+            <code>8ed30a8892bc3cb25ca6b52d045b51f176f55913</code>, a completely wrong address.</li>
+          <li><b>Everything moves forward only,</b> except the checksum which can be reversed simply by lowercasing.
+          </li>
         </ol>
       </div>
     </div>
@@ -570,23 +667,39 @@
     <div class="card">
       <p style="margin-top:0">
         <b>This is why the 12 words restore every account, while nobody can go from an address back to the phrase.</b>
-        One random choice, five one-way steps and a checksum that only protects against typos.
+        One random choice, four one-way steps and a checksum that only protects against typos.
       </p>
       <p style="margin-bottom:0">
-        <b>Conclusion:</b> The worked example above ran the whole chain on real values. The pipeline combines primitives with different roles: deterministic key derivation (BIP), public-key cryptography (secp256k1), hashing (Keccak-256) and a checksum (EIP-55). Keeping generation, derivation, hashing, checksums and encoding separate avoids common confusions. Desirable statistical properties such as avalanche and uniformity belong to hash functions, while public-key cryptography relies on hard mathematical problems.
+        <b>Conclusion:</b> The worked example above ran the whole chain on real values. The pipeline combines primitives
+        with different roles: deterministic key derivation (BIP), public-key cryptography (secp256k1), hashing
+        (Keccak-256) and a checksum (EIP-55). Keeping generation, derivation, hashing, checksums and encoding separate
+        avoids common confusions. Desirable statistical properties such as avalanche and uniformity belong to hash
+        functions, while public-key cryptography relies on hard mathematical problems.
       </p>
     </div>
-
-    <!-- FOOTER -->
-    <footer>
-      <p>
-        <b>Statistics & Cryptography Portfolio</b> · Diana Buffo<br>
-        <a href="index.html" style="color:var(--ac); text-decoration:none; font-weight:600;">← Return to Home</a> · 
-        <a href="homework1-pt1.html" style="color:var(--ac); text-decoration:none; font-weight:600;">← Homework 1 pt.1</a> · 
-        <a href="homework2.html" style="color:var(--ac); text-decoration:none; font-weight:600;">Homework 2 →</a>
-      </p>
-    </footer>
   </main>
+
+  <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
+  <footer class="google-nav-wrap">
+    <div class="google-nav-title">Which homework would you like to explore?</div>
+    <div class="google-pagination">
+      <a href="homework1-pt1.html" class="google-page-arrow" title="Previous: Homework 1 pt.1">&larr; Previous</a>
+      <div class="google-page-numbers">
+        <a href="homework1-pt1.html" class="google-page-link"
+          title="Homework 1 pt.1: From Private Key to Public Key">1.1</a>
+        <a href="homework1-pt2.html" class="google-page-link active"
+          title="Homework 1 pt.2: From Wallet Seed to Ethereum Address">1.2</a>
+        <a href="homework2.html" class="google-page-link"
+          title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
+        <a href="homework3.html" class="google-page-link"
+          title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+      </div>
+      <a href="homework2.html" class="google-page-arrow" title="Next: Homework 2">Next &rarr;</a>
+    </div>
+    <div class="google-home-link">
+      <a href="index.html">&larr; Return to Portfolio Overview</a>
+    </div>
+  </footer>
 
   <script>
     // SCRIPT PER GENERARE LA VISUALIZZAZIONE INTERATTIVA DEI CARATTERI EIP-55
@@ -615,4 +728,5 @@
     }
   </script>
 </body>
+
 </html>

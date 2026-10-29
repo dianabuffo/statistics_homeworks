@@ -1,19 +1,23 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Statistics | Diana Buffo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
   <!-- NAVBAR CENTRATA -->
   <header class="navbar">
-    <a href="index.html" class="brand-centered" title="Home">
+    <a href="index.html" class="brand-centered" title="Back to Home">
       <span class="brand-title">Statistics</span>
       <span class="brand-subtitle">Diana Buffo</span>
     </a>
@@ -30,7 +34,9 @@
         </div>
         <h3>From Private Key to Public Key (Toy Elliptic Curve)</h3>
         <p>
-          Toy elliptic curve exploration: computing public keys Q = k·G on y² = x³ + 7 (mod 17) via iterative addition and the double-and-add algorithm, step-by-step point visualization, and statistical randomness analysis against SHA-256.
+          Toy elliptic curve exploration: computing public keys Q = k·G on y² = x³ + 7 (mod 17) via iterative addition
+          and the double-and-add algorithm, step-by-step point visualization, and statistical randomness analysis
+          against SHA-256.
         </p>
         <div class="hw-actions">
           <a href="homework1-pt1.html" class="btn btn-primary">Open Homework 1 pt.1 ↗</a>
@@ -44,7 +50,9 @@
         </div>
         <h3>From Wallet Seed to Ethereum Address</h3>
         <p>
-          Six-step deterministic key derivation pipeline from a 12-word mnemonic phrase to a checksummed address (BIP-39, BIP-32/44, secp256k1, Keccak-256, EIP-55), architectural role separation, and statistical avalanche analysis.
+          Five-step deterministic key derivation pipeline from a 12-word mnemonic phrase to a checksummed address
+          (BIP-39, BIP-32/44, secp256k1, Keccak-256, EIP-55), architectural role separation, and statistical avalanche
+          analysis.
         </p>
         <div class="hw-actions">
           <a href="homework1-pt2.html" class="btn btn-primary">Open Homework 1 pt.2 ↗</a>
@@ -58,10 +66,28 @@
         </div>
         <h3>Toy ECC Encryption, Caesar Cipher and Cryptanalysis</h3>
         <p>
-          One message, two ciphers, two attacks: comparing a toy secp256k1 public-key encryption scheme with the classical Caesar cipher, statistical cryptanalysis with letter frequencies, chi-square, bigram scoring and dictionary methods, plus exhaustive and baby-step giant-step (BSGS) key recovery.
+          One message, two ciphers, two attacks: comparing a toy secp256k1 public-key encryption scheme with the
+          classical Caesar cipher, statistical cryptanalysis with letter frequencies, chi-square, bigram scoring and
+          dictionary methods, plus exhaustive and baby-step giant-step (BSGS) key recovery.
         </p>
         <div class="hw-actions">
           <a href="homework2.html" class="btn btn-primary">Open Homework 2 ↗</a>
+        </div>
+      </article>
+
+      <!-- RETTANGOLO HOMEWORK 3 -->
+      <article class="hw-card active-card" onclick="window.location.href='homework3.html'" style="cursor: pointer;">
+        <div class="hw-card-top">
+          <span class="hw-number">Homework 3</span>
+        </div>
+        <h3>Stochastic Penetration Processes: LLN & CLT</h3>
+        <p>
+          Modeling offensive penetration testing across <i>n</i> systems and <i>m</i> attackers: Bernoulli breach vs
+          symmetric Rademacher walks, sample trajectory dynamics, asymptotic variance scaling across normalizations,
+          Weak Law of Large Numbers (Chebyshev bound), and Central Limit Theorem Gaussian convergence.
+        </p>
+        <div class="hw-actions">
+          <a href="homework3.html" class="btn btn-primary">Open Homework 3 ↗</a>
         </div>
       </article>
 
@@ -69,4 +95,5 @@
   </main>
 
 </body>
+
 </html>
