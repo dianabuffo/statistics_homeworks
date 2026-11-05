@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Homework 4 – Welford's Recurrences and Sampling Mean &amp; Variance | Diana Buffo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/homework3.css">
+    <link rel="stylesheet" href="css/homework4.css">
+</head>
+
+<body>
+
+    <!-- NAVBAR CENTRATA -->
+    <nav class="navbar">
+        <a href="index.html" class="brand-centered" title="Back to Home">
+            <span class="brand-title">Statistics</span>
+            <span class="brand-subtitle">Diana Buffo</span>
+        </a>
+    </nav>
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <div class="hw-tag">Homework 4</div>
+            <h1>Welford's Recurrences and Sampling Mean &amp; Variance</h1>
+            <p>Computing the mean and the variance of a stream of scores with a few lines of code, then checking on m
+                simulated hackers that these estimates are centered on the true &mu; and &sigma;&sup2;, and how their
+                spread shrinks as n grows.</p>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- TASTI pt1 / pt2 -->
+        <div class="pt-nav" id="ptNav">
+            <a href="#pt1" class="pt-pill active" data-pt="pt1"
+                title="Exercise 1: Welford's recurrence formulas">pt1</a>
+            <a href="#pt2" class="pt-pill" data-pt="pt2" title="Exercise 2: Sampling mean and variance">pt2</a>
+        </div>
+
+        <!-- 3 STEP PREVIEW CARDS -->
+        <div class="steps">
+            <div class="card"><b>1. Derive Welford's formulas</b><br>Starting from Knuth's update for the mean, we
+                derive the update for the sum of squares and the variance. The code needs only 3 lines.</div>
+            <div class="card"><b>2. Estimate with m hackers</b><br>Each hacker gets n scores from 0 to 10. Welford gives
+                the sampling mean and variance in a single pass, without storing the scores.</div>
+            <div class="card"><b>3. Compare with &mu; and &sigma;&sup2;</b><br>The averages over the hackers land on the
+                true values (unbiased estimators), and their spread shrinks like 1/&radic;n.</div>
+        </div>
+
+        <!-- OVERVIEW -->
+        <div class="card">
+            <h3 style="margin-top:0;">What are we doing and what is the objective?</h3>
+            <p>
+                <b>pt1 (pure mathematics + code):</b> we want to compute the mean and the variance of a long list of
+                numbers <i>without keeping the list</i>, updating the result every time a new number arrives. We derive
+                the update rules (Welford's recurrences) and write the code.
+            </p>
+            <p>
+                <b>pt2 (simulation):</b> we extend Homework 3. Each of <b>m hackers</b> attacks <b>n systems</b> and
+                gets, for every system, a score from 0 to 10 drawn from a fixed distribution with known mean &mu; and
+                variance &sigma;&sup2;. Each hacker uses Welford's formulas to compute the <b>sampling mean</b> and the
+                <b>sampling variance</b> of their own n scores. We then average these quantities over the m hackers and
+                compare them with &mu; and &sigma;&sup2;.
+            </p>
+            <p style="margin-bottom:0;">
+                <b>The objective:</b> to understand that (1) the sampling mean and the sampling variance are
+                <i>estimators</i> that, on average, hit the true values exactly (unbiasedness); (2) each single hacker
+                is still off by a random amount, and this error shrinks as n grows; (3) this is the foundation of
+                inferential statistics, where from one sample we say something reliable about the unknown population.
+            </p>
+        </div>
+
+        <!-- STUDY GUIDE: START HERE -->
+        <details class="study" open>
+            <summary>Study guide: start here (the vocabulary, from zero)</summary>
+            <div class="study-body">
+                <h4>Parameters versus estimates (the most important distinction)</h4>
+                <ul>
+                    <li><b>Population (theoretical) values &mu; and &sigma;&sup2;:</b> they belong to the <i>rule that
+                            generates the scores</i>. They are fixed numbers, computed from the probability of each
+                        score. In a real attack you do not know them.</li>
+                    <li><b>Sample values M<sub>n</sub> and s<sub>n</sub>&sup2;:</b> they are computed from the n scores
+                        you actually observed. They change from one hacker to the next because the scores are random.
+                        They are <b>estimates</b> of &mu; and &sigma;&sup2;.</li>
+                    <li><b>Estimator:</b> a recipe that turns the data into an estimate. "Add the scores and divide by
+                        n" is an estimator of &mu;.</li>
+                </ul>
+
+                <h4>Words you need</h4>
+                <ul>
+                    <li><b>Sample mean M<sub>n</sub>:</b> (x<sub>1</sub> + &hellip; + x<sub>n</sub>)/n. Same quantity as
+                        S<sub>n</sub>/n of Homework 3.</li>
+                    <li><b>SS<sub>n</sub> (sum of squares):</b> the sum of the squared distances from the sample mean,
+                        &Sigma;(x<sub>i</sub> &minus; M<sub>n</sub>)&sup2;. It is the "raw material" of the variance.
+                    </li>
+                    <li><b>Sample variance s<sub>n</sub>&sup2;:</b> SS<sub>n</sub>/(n&minus;1). It estimates
+                        &sigma;&sup2;. The version with n at the denominator, SS<sub>n</sub>/n, is also used but it
+                        underestimates &sigma;&sup2; (explained in Section 9).</li>
+                    <li><b>Unbiased:</b> an estimator is unbiased if its average over many repetitions equals the true
+                        value. It does not say that one single estimate is exact.</li>
+                    <li><b>Standard error:</b> the standard deviation of an estimator across repetitions. For the sample
+                        mean it is &sigma;/&radic;n. It measures "how wrong a single estimate typically is".</li>
+                    <li><b>Recurrence / online algorithm:</b> a formula that updates the result using only the previous
+                        result and the new datum. It uses constant memory.</li>
+                    <li><b>Monte Carlo simulation:</b> the computer plays the experiment many times with random numbers
+                        and we look at the pile of outcomes.</li>
+                </ul>
+            </div>
+        </details>
+
+        <!-- ===================== pt1 ===================== -->
+        <section id="pt1" class="pt-anchor">
+            <div class="pt-banner">
+                <span class="pt-tag">pt1</span>
+                <h2>Exercise 1: Welford's recurrence formulas</h2>
+                <p>Derive the recurrences for the sum of squares and the variance, in the same way as Knuth's recurrence
+                    for the mean, and write the code.</p>
+                <blockquote>Derive Welford's recurrence formulas for the sum of squares (SS) and the variance, following
+                    the same approach as Knuth's recurrence formula for the mean. Write the corresponding code. The core
+                    logic should require only about 3 lines.</blockquote>
+            </div>
+
+            <!-- SECTION 1 -->
+            <h2><span class="n">1</span> Knuth's recurrence for the mean</h2>
+            <div class="card">
+                <p style="margin-top:0;">Numbers x<sub>1</sub>, x<sub>2</sub>, &hellip; arrive one at a time. Let
+                    M<sub>n</sub> be the mean of the first n of them:</p>
+                <span class="formula">M<sub>n</sub> = (1/n) &middot; (x<sub>1</sub> + x<sub>2</sub> + &hellip; +
+                    x<sub>n</sub>)</span>
+                <p>We want M<sub>n</sub> from M<sub>n&minus;1</sub> and the new number x<sub>n</sub> only.</p>
+
+                <div class="dstep"><span class="t">Step 1: rewrite the sum</span>
+                    <p>The first n&minus;1 numbers add up to (n&minus;1)&middot;M<sub>n&minus;1</sub> (this is just the
+                        definition of mean, read backwards). So:</p>
+                    <span class="formula">x<sub>1</sub> + &hellip; + x<sub>n</sub> =
+                        (n&minus;1)&middot;M<sub>n&minus;1</sub> + x<sub>n</sub></span>
+                </div>
+                <div class="dstep"><span class="t">Step 2: divide by n and rearrange</span>
+                    <span class="formula">M<sub>n</sub> = [(n&minus;1)&middot;M<sub>n&minus;1</sub> + x<sub>n</sub>] /
+                        n<br>&nbsp;&nbsp;&nbsp;&nbsp;= M<sub>n&minus;1</sub> &minus; M<sub>n&minus;1</sub>/n +
+                        x<sub>n</sub>/n<br>&nbsp;&nbsp;&nbsp;&nbsp;= M<sub>n&minus;1</sub> + (x<sub>n</sub> &minus;
+                        M<sub>n&minus;1</sub>)/n</span>
+                </div>
+
+                <div class="callout-academic">
+                    <b>Knuth's recurrence.</b> Call &delta;<sub>n</sub> = x<sub>n</sub> &minus; M<sub>n&minus;1</sub>
+                    (how far the new number is from the old mean, the "surprise"). Then
+                    <span class="formula" style="margin-bottom:0;">M<sub>n</sub> = M<sub>n&minus;1</sub> +
+                        &delta;<sub>n</sub> / n with M<sub>0</sub> = 0</span>
+                </div>
+                <p style="margin-bottom:0;"><b>In words:</b> the new mean is the old mean plus a fraction 1/n of the
+                    surprise. Starting from M<sub>0</sub> = 0, the first step gives M<sub>1</sub> = 0 + (x<sub>1</sub>
+                    &minus; 0)/1 = x<sub>1</sub>, as it must.</p>
+            </div>
+
+            <!-- SECTION 2 -->
+            <h2><span class="n">2</span> Welford's recurrence for the sum of squares</h2>
+            <div class="card">
+                <p style="margin-top:0;">Define the sum of squared deviations from the current mean:</p>
+                <span class="formula">SS<sub>n</sub> = &sum;<sub>i=1</sub><sup>n</sup> (x<sub>i</sub> &minus;
+                    M<sub>n</sub>)&sup2;</span>
+                <p>The difficulty: when a new number arrives, <b>the mean changes</b>, so every old deviation changes
+                    too. We must show that this can still be fixed with one cheap correction. We use two facts from
+                    Section 1:</p>
+                <span class="formula">(a) M<sub>n</sub> &minus; M<sub>n&minus;1</sub> = &delta;<sub>n</sub>/n<br>(b)
+                    x<sub>n</sub> &minus; M<sub>n</sub> = &delta;<sub>n</sub> &minus; &delta;<sub>n</sub>/n =
+                    (n&minus;1)&delta;<sub>n</sub>/n</span>
+
+                <div class="dstep"><span class="t">Step 1: separate the new term</span>
+                    <span class="formula">SS<sub>n</sub> = &sum;<sub>i=1</sub><sup>n&minus;1</sup> (x<sub>i</sub>
+                        &minus; M<sub>n</sub>)&sup2; + (x<sub>n</sub> &minus; M<sub>n</sub>)&sup2;</span>
+                </div>
+                <div class="dstep"><span class="t">Step 2: express the old terms with the old mean</span>
+                    <p>For i &lt; n, add and subtract M<sub>n&minus;1</sub> and use (a):</p>
+                    <span class="formula">x<sub>i</sub> &minus; M<sub>n</sub> = (x<sub>i</sub> &minus;
+                        M<sub>n&minus;1</sub>) &minus; (M<sub>n</sub> &minus; M<sub>n&minus;1</sub>) = (x<sub>i</sub>
+                        &minus; M<sub>n&minus;1</sub>) &minus; &delta;<sub>n</sub>/n</span>
+                </div>
+                <div class="dstep"><span class="t">Step 3: expand the square and sum over i &lt; n</span>
+                    <span class="formula">&sum;<sub>i&lt;n</sub> (x<sub>i</sub> &minus; M<sub>n</sub>)&sup2; =
+                        &sum;<sub>i&lt;n</sub> (x<sub>i</sub> &minus; M<sub>n&minus;1</sub>)&sup2; &minus;
+                        2(&delta;<sub>n</sub>/n)&sum;<sub>i&lt;n</sub> (x<sub>i</sub> &minus; M<sub>n&minus;1</sub>) +
+                        (n&minus;1)&delta;<sub>n</sub>&sup2;/n&sup2;</span>
+                    <p>The first sum is SS<sub>n&minus;1</sub>. The middle sum is <b>zero</b>: deviations from the mean
+                        always add up to zero (&sum;<sub>i&lt;n</sub> x<sub>i</sub> = (n&minus;1)M<sub>n&minus;1</sub>).
+                        So the old terms contribute</p>
+                    <span class="formula">SS<sub>n&minus;1</sub> + (n&minus;1)&delta;<sub>n</sub>&sup2;/n&sup2;</span>
+                </div>
+                <div class="dstep"><span class="t">Step 4: the new term, with fact (b)</span>
+                    <span class="formula">(x<sub>n</sub> &minus; M<sub>n</sub>)&sup2; =
+                        (n&minus;1)&sup2;&delta;<sub>n</sub>&sup2;/n&sup2;</span>
+                </div>
+                <div class="dstep"><span class="t">Step 5: add the two pieces</span>
+                    <span class="formula">SS<sub>n</sub> = SS<sub>n&minus;1</sub> + &delta;<sub>n</sub>&sup2; &middot;
+                        [(n&minus;1) + (n&minus;1)&sup2;]/n&sup2; = SS<sub>n&minus;1</sub> + &delta;<sub>n</sub>&sup2;
+                        &middot; (n&minus;1)n/n&sup2; = SS<sub>n&minus;1</sub> +
+                        (n&minus;1)&delta;<sub>n</sub>&sup2;/n</span>
+                </div>
+
+                <div class="callout-academic">
+                    <b>Welford's recurrence for SS.</b> Because (x<sub>n</sub> &minus; M<sub>n</sub>) =
+                    (n&minus;1)&delta;<sub>n</sub>/n, the last result can be written as a product of two "surprises",
+                    one measured with the old mean and one with the new mean:
+                    <span class="formula" style="margin-bottom:0;">SS<sub>n</sub> = SS<sub>n&minus;1</sub> +
+                        (x<sub>n</sub> &minus; M<sub>n&minus;1</sub>) &middot; (x<sub>n</sub> &minus; M<sub>n</sub>)
+                        with SS<sub>0</sub> = 0</span>
+                </div>
+            </div>
+
+            <!-- SECTION 3 -->
+            <h2><span class="n">3</span> The recurrence for the variance</h2>
+            <div class="card">
+                <p style="margin-top:0;">From SS<sub>n</sub> we get the two usual variances:</p>
+                <span class="formula">sample variance (unbiased): s<sub>n</sub>&sup2; = SS<sub>n</sub> / (n&minus;1) for
+                    n &ge; 2<br>population-style variance: v<sub>n</sub> = SS<sub>n</sub> / n</span>
+
+                <div class="dstep"><span class="t">Recurrence for the sample variance s<sub>n</sub>&sup2;</span>
+                    <p>Use SS<sub>n</sub> = SS<sub>n&minus;1</sub> + (n&minus;1)&delta;<sub>n</sub>&sup2;/n and the fact
+                        that SS<sub>n&minus;1</sub> = (n&minus;2)&middot;s<sub>n&minus;1</sub>&sup2;:</p>
+                    <span class="formula">(n&minus;1)&middot;s<sub>n</sub>&sup2; =
+                        (n&minus;2)&middot;s<sub>n&minus;1</sub>&sup2; + (n&minus;1)&delta;<sub>n</sub>&sup2;/n</span>
+                    <p>Divide by (n&minus;1):</p>
+                    <span class="formula">s<sub>n</sub>&sup2; =
+                        [(n&minus;2)/(n&minus;1)]&middot;s<sub>n&minus;1</sub>&sup2; + &delta;<sub>n</sub>&sup2;/n for n
+                        &ge; 2</span>
+                </div>
+                <div class="dstep"><span class="t">Recurrence for v<sub>n</sub> = SS<sub>n</sub>/n</span>
+                    <span class="formula">v<sub>n</sub> = [(n&minus;1)/n]&middot;v<sub>n&minus;1</sub> +
+                        (n&minus;1)&delta;<sub>n</sub>&sup2;/n&sup2;</span>
+                </div>
+
+                <div class="callout-academic">
+                    <b>Summary of what we derived.</b>
+                    <span class="formula" style="margin-bottom:0;">&delta;<sub>n</sub> = x<sub>n</sub> &minus;
+                        M<sub>n&minus;1</sub><br>M<sub>n</sub> = M<sub>n&minus;1</sub> + &delta;<sub>n</sub>/n
+                        (Knuth)<br>SS<sub>n</sub> = SS<sub>n&minus;1</sub> + &delta;<sub>n</sub> &middot; (x<sub>n</sub>
+                        &minus; M<sub>n</sub>) (Welford)<br>s<sub>n</sub>&sup2; = SS<sub>n</sub>/(n&minus;1)</span>
+                </div>
+                <p style="margin-bottom:0;">In practice the simplest strategy is to <b>update only M and SS</b> and
+                    divide at the end. That is what the code below does.</p>
+            </div>
+
+            <!-- SECTION 4 -->
+            <h2><span class="n">4</span> The code (3 lines of core logic)</h2>
+            <div class="card">
+                <pre class="code">def welford(data):
+    mean = ss = 0.0
+    for n, x in enumerate(data, start=1):
+        d = x - mean            <span class="cm"># 1) surprise w.r.t. the OLD mean   (delta_n)</span>
+        mean += d / n           <span class="cm"># 2) Knuth: update the mean</span>
+        ss += d * (x - mean)    <span class="cm"># 3) Welford: update SS (uses the NEW mean)</span>
+    return mean, ss / (n - 1)   <span class="cm"># sample mean, unbiased sample variance</span></pre>
+                <p><b>The three core lines</b> are the ones numbered 1, 2, 3. Everything else is bookkeeping. Note that
+                    memory use is constant: the data are never stored, so <code>data</code> can be a generator that
+                    reads a file or a network stream.</p>
+
+                <p><b>Quick check against NumPy</b> (the two results must be equal up to rounding):</p>
+                <pre class="code">import numpy as np
+x = np.random.default_rng(0).integers(0, 11, 1000)      <span class="cm"># 1000 scores in 0..10</span>
+print(welford(x))                                       <span class="cm"># (mean, variance) with Welford</span>
+print(x.mean(), x.var(ddof=1))                          <span class="cm"># reference values</span></pre>
+            </div>
+
+            <!-- SECTION 5 -->
+            <h2><span class="n">5</span> Live demo: Welford step by step, and why it matters</h2>
+            <div class="card">
+                <div class="row">
+                    <label>Numbers (comma separated):
+                        <input id="wfData" type="text" value="4, 7, 13, 16" style="width:min(320px,100%);">
+                    </label>
+                    <label>Add the same offset to every number:
+                        <select id="wfOff">
+                            <option value="0" selected>0</option>
+                            <option value="1000">10&sup3;</option>
+                            <option value="1000000">10&#8310;</option>
+                            <option value="1000000000">10&#8313;</option>
+                            <option value="1000000000000">10&sup1;&sup2;</option>
+                        </select>
+                    </label>
+                    <button id="btnWf">Run</button>
+                </div>
+                <div id="wfOut"></div>
+                <p class="mut" style="margin:8px 0 0;">The offset does not change the variance (the spread of
+                    1,000,000,004, 1,000,000,007, &hellip; is the same as that of 4, 7, &hellip;), but it breaks
+                    careless formulas. Try 10&#8313; and 10&sup1;&sup2;.</p>
+            </div>
+        </section>
+
+        <!-- ===================== pt2 ===================== -->
+        <section id="pt2" class="pt-anchor">
+            <div class="pt-banner">
+                <span class="pt-tag">pt2</span>
+                <h2>Exercise 2: Sampling mean and variance</h2>
+                <p>m hackers, n systems, scores from 0 to 10, Welford for each hacker, then averages across hackers
+                    compared with &mu; and &sigma;&sup2;.</p>
+                <blockquote>Extend the previous homework by assigning each penetration attempt a score between 0 and 10,
+                    drawn from a fixed probability distribution of your choice. Let the theoretical mean and variance be
+                    &mu; and &sigma;&sup2;. There are m hackers, each attempting n systems (a trajectory of n scores).
+                    For each hacker, use Welford's formulas to compute the sampling mean and variance. Across the m
+                    hackers, compute the average of the sampling means and the average of the sampling variances, and
+                    compare them with &mu; and &sigma;&sup2;. What conclusions can you draw? Why are these results
+                    useful in inferential statistics? Repeat for different values of n: how does increasing n affect the
+                    variability of the sampling means and variances?</blockquote>
+            </div>
+
+            <!-- SECTION 6 -->
+            <h2><span class="n">6</span> The experiment: scores, hackers and systems</h2>
+            <div class="card">
+                <div class="row">
+                    <label>Score distribution:
+                        <select id="distSel">
+                            <option value="b03" selected>Binomial(10, 0.30): mostly low scores</option>
+                            <option value="b05">Binomial(10, 0.50): symmetric bell</option>
+                            <option value="uni">Uniform on {0, &hellip;, 10}</option>
+                            <option value="bim">Bimodal: either very low or very high</option>
+                        </select>
+                    </label>
+                    <label>Hackers (m):
+                        <select id="mSel">
+                            <option value="200">200</option>
+                            <option value="500">500</option>
+                            <option value="1000" selected>1,000</option>
+                            <option value="2000">2,000</option>
+                            <option value="5000">5,000</option>
+                        </select>
+                    </label>
+                    <label>Max systems (n<sub>max</sub>):
+                        <select id="nSel">
+                            <option value="100">100</option>
+                            <option value="1000" selected>1,000</option>
+                            <option value="5000">5,000</option>
+                        </select>
+                    </label>
+                    <button id="btnRunExp">Re-run experiment</button>
+                </div>
+
+                <div class="canvas-container" style="margin-bottom:0;">
+                    <canvas id="canvasDist" style="height:230px;"></canvas>
+                </div>
+                <div class="live-readout" id="distReadout">Loading distribution...</div>
+                <p class="mut" style="margin:6px 0 0;">
+                    <b>What it means:</b> the bars are the probability of each score from 0 to 10 (the rule that
+                    generates every attempt); the dashed orange line is the theoretical mean &mu;. &mu; and
+                    &sigma;&sup2; are computed exactly from these probabilities: &mu; = &sum; k&middot;P(k),
+                    &sigma;&sup2; = &sum; (k&minus;&mu;)&sup2;&middot;P(k).
+                </p>
+            </div>
+
+            <!-- SECTION 7 -->
+            <h2><span class="n">7</span> Running estimates of each hacker (Welford in action)</h2>
+            <div class="card">
+                <div class="row">
+                    <label>Hackers shown: <b id="pathKDisplay">20</b>
+                        <input id="pathK" type="range" min="3" max="30" value="20" style="width:140px;">
+                    </label>
+                </div>
+
+                <div class="canvas-grid-2">
+                    <div>
+                        <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Running sampling mean
+                            M<sub>i</sub></h3>
+                        <canvas id="canvasPathMean"></canvas>
+                    </div>
+                    <div>
+                        <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Running sampling variance
+                            s<sub>i</sub>&sup2;</h3>
+                        <canvas id="canvasPathVar"></canvas>
+                    </div>
+                </div>
+                <div class="live-readout" id="pathReadout">Drawing trajectories...</div>
+                <p class="mut" style="margin:6px 0 0;">
+                    <b>What it means:</b> each colored line is one hacker; the horizontal axis (logarithmic) is the
+                    number of systems attempted so far. Dashed orange = theoretical &mu; (left) and &sigma;&sup2;
+                    (right). Shaded band = the central 95% range predicted by the theory for a single hacker (left: &mu;
+                    &plusmn; 2&sigma;/&radic;i; right: &sigma;&sup2; &plusmn; 2 standard deviations of the sample
+                    variance, approximate for small i). At small i the lines are wild; as i grows they funnel toward the
+                    dashed line.
+                </p>
+            </div>
+
+            <!-- SECTION 8 -->
+            <h2><span class="n">8</span> The distribution of the two estimators across hackers</h2>
+            <div class="card">
+                <div class="row">
+                    <label>Checkpoint n = <b id="ckDisplay" style="color:var(--ac); font-size:1.1rem;">20</b>
+                        <input id="ckSlider" type="range" min="0" max="10" value="3" style="width:180px;">
+                    </label>
+                    <button id="btnPlayN" class="sec">Play Progression</button>
+                    <label>Histogram bins: <b id="binsDisplay">30</b>
+                        <input id="binsSlider" type="range" min="10" max="60" value="30" style="width:110px;">
+                    </label>
+                </div>
+
+                <div class="canvas-grid-2">
+                    <div>
+                        <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Sampling means M<sub>n</sub>
+                            of the m hackers</h3>
+                        <canvas id="canvasHistMean"></canvas>
+                    </div>
+                    <div>
+                        <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Sampling variances
+                            s<sub>n</sub>&sup2; of the m hackers</h3>
+                        <canvas id="canvasHistVar"></canvas>
+                    </div>
+                </div>
+                <div class="live-readout" id="histReadout">Analyzing histograms...</div>
+                <p class="mut" style="margin:6px 0 0;">
+                    <b>What it means:</b> each hacker contributes one value to each histogram (their own M<sub>n</sub>
+                    and s<sub>n</sub>&sup2;). Left: blue bars = sampling means, orange curve = the normal curve N(&mu;,
+                    &sigma;&sup2;/n) predicted by theory, dashed orange line = &mu;, green line = the average of the m
+                    sampling means. Right: blue bars = sampling variances; dashed orange line = &sigma;&sup2;; green
+                    line = average of s&sup2; (they coincide); rose line = average of SS/n, which falls short of
+                    &sigma;&sup2;.
+                </p>
+            </div>
+
+            <!-- SECTION 9 -->
+            <h2><span class="n">9</span> Averages across hackers versus the theoretical &mu; and &sigma;&sup2;</h2>
+            <div class="card">
+                <div class="canvas-grid-2">
+                    <div>
+                        <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Average of the sampling means
+                            vs &mu;</h3>
+                        <canvas id="canvasAvgMean"></canvas>
+                    </div>
+                    <div>
+                        <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Average of the sampling
+                            variances vs &sigma;&sup2;</h3>
+                        <canvas id="canvasAvgVar"></canvas>
+                    </div>
+                </div>
+                <div class="live-readout" id="avgReadout">Computing averages...</div>
+                <p class="mut" style="margin:6px 0 0;">
+                    <b>What it means:</b> horizontal axis = n (logarithmic). Left: blue dots = average over the m
+                    hackers of the sampling mean, dashed orange = &mu;, green band = the range in which the dots should
+                    fall 95% of the time just because only m hackers are simulated (&mu; &plusmn; 2&sigma;/&radic;(nm)).
+                    Right: blue = average of s&sup2; (divide by n&minus;1), rose = average of SS/n (divide by n), dashed
+                    orange = &sigma;&sup2;, dotted rose = the theoretical bias &sigma;&sup2;(n&minus;1)/n, green band =
+                    Monte Carlo 95% range for the blue dots.
+                </p>
+            </div>
+
+            <!-- SECTION 10 -->
+            <h2><span class="n">10</span> How the variability of the estimators depends on n</h2>
+            <div class="card">
+                <div class="canvas-container">
+                    <canvas id="canvasSpread"></canvas>
+                </div>
+                <div class="live-readout" id="spreadReadout">Computing standard deviations...</div>
+                <p class="mut" style="margin:6px 0 0;">
+                    <b>What it means:</b> both axes are logarithmic. Blue dots = standard deviation of the m sampling
+                    means; dashed blue = theory &sigma;/&radic;n. Rose dots = standard deviation of the m sampling
+                    variances; dashed rose = theory &radic;[(&mu;<sub>4</sub> &minus;
+                    (n&minus;3)/(n&minus;1)&middot;&sigma;<sup>4</sup>)/n], where &mu;<sub>4</sub> is the fourth central
+                    moment of the score distribution. In both cases the line has slope &minus;1/2: 100 times more
+                    systems gives 10 times less variability.
+                </p>
+            </div>
+
+            <!-- SECTION 11 -->
+            <h2><span class="n">11</span> Numerical validation table</h2>
+            <div class="card">
+                <p style="margin-top:0;">All the numbers behind the charts, for every checkpoint n. The highlighted row
+                    is the checkpoint selected in Section 8. The z columns say how many Monte Carlo standard errors the
+                    simulated average is from the theoretical value (values between &minus;2 and +2 are expected 95% of
+                    the time).</p>
+                <div class="wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>n</th>
+                                <th>Avg of M<sub>n</sub></th>
+                                <th>z</th>
+                                <th>Avg of s<sub>n</sub>&sup2;</th>
+                                <th>z</th>
+                                <th>Avg of SS/n [theory &sigma;&sup2;(n&minus;1)/n]</th>
+                                <th>SD of M<sub>n</sub> [Sim / Theo]</th>
+                                <th>SD of s<sub>n</sub>&sup2; [Sim / Theo]</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryBody">
+                            <tr>
+                                <td colspan="8" class="mut">Simulating...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mut" style="margin:6px 0 0;"><b>Where to look:</b> column "Avg of M<sub>n</sub>" must be close
+                    to &mu; and "Avg of s<sub>n</sub>&sup2;" to &sigma;&sup2;, in every row; "Avg of SS/n" is lower than
+                    &sigma;&sup2; for small n; the last two columns shrink like 1/&radic;n and simulation and theory
+                    agree.</p>
+            </div>
+
+            <!-- SECTION 12 -->
+            <h2><span class="n">12</span> Conclusion</h2>
+            <div class="card">
+                <div class="live-conclusion" id="liveConclusion">Computing the summary of this run...</div>
+
+                <h3>1. What do we conclude from the comparison with &mu; and &sigma;&sup2;?</h3>
+                <p>The average of the sampling means over the hackers coincides with &mu;, and the average of the
+                    sampling variances (with the n&minus;1 divisor) coincides with &sigma;&sup2;, for every n. The small
+                    differences are simulation noise (they stay within a couple of Monte Carlo standard errors, see the
+                    z-scores). In statistical language: <b>the sampling mean and the sampling variance are unbiased
+                        estimators</b> of &mu; and &sigma;&sup2;. The version of the variance that divides by n is
+                    instead biased downwards by the factor (n&minus;1)/n.</p>
+
+                <h3>2. Why are these results useful in inferential statistics?</h3>
+                <ul>
+                    <li>In real life there is <b>one</b> sample (one pen-test campaign), and &mu; and &sigma;&sup2; are
+                        unknown. Inference means using M<sub>n</sub> and s<sub>n</sub>&sup2; to say something about
+                        them. Unbiasedness guarantees that this procedure does not push the answer systematically too
+                        high or too low.</li>
+                    <li>Knowing the spread of the estimator (SD(M<sub>n</sub>) = &sigma;/&radic;n, estimated by
+                        s<sub>n</sub>/&radic;n, the <b>standard error</b>) lets us build <b>confidence intervals</b>
+                        (M<sub>n</sub> &plusmn; 2 s<sub>n</sub>/&radic;n contains &mu; about 95% of the time, thanks to
+                        the CLT) and carry out hypothesis tests ("is the breach score of this defense really lower than
+                        5?").</li>
+                    <li>The Welford formulas make all this computable on a data stream, with constant memory and without
+                        numerical problems, which is what monitoring and detection systems actually need.</li>
+                    <li>The simulation with m hackers is a <i>laboratory</i> device: we can check on many repetitions
+                        what theory claims about estimators, something impossible with a single real sample.</li>
+                </ul>
+
+                <h3>3. What happens to the variability when n increases?</h3>
+                <p>The center of the estimators does not change (they are unbiased for every n), but their <b>spread
+                        decreases like 1/&radic;n</b>: SD(M<sub>n</sub>) = &sigma;/&radic;n, and SD(s<sub>n</sub>&sup2;)
+                    is proportional to 1/&radic;n too (with a constant that depends on the fourth moment). The
+                    histograms of Section 8 get narrower, the trajectories of Section 7 funnel in, the log-log lines of
+                    Section 10 have slope &minus;1/2. The estimators are <b>consistent</b>: they converge to the true
+                    values. And the price of precision is steep: four times more systems to halve the error.</p>
+
+                <h3>Connection with Homework 3</h3>
+                <p style="margin-bottom:0;">The sampling mean M<sub>n</sub> is exactly the "average score"
+                    S<sub>n</sub>/n of Homework 3, so Var(M<sub>n</sub>) = &sigma;&sup2;/n, the Law of Large Numbers and
+                    the CLT apply to it directly. The new ingredient is that &sigma;&sup2; is also estimated from the
+                    data, and that the estimator needs the n&minus;1 correction to be unbiased.</p>
+            </div>
+        </section>
+
+        <!-- SUMMARY -->
+        <h2>Summary</h2>
+        <div class="card">
+            <div class="wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concept</th>
+                            <th>One-sentence version</th>
+                            <th>Where to see it</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><b>Knuth (mean)</b></td>
+                            <td>M<sub>n</sub> = M<sub>n&minus;1</sub> + (x<sub>n</sub> &minus; M<sub>n&minus;1</sub>)/n:
+                                the new mean is the old one plus 1/n of the surprise.</td>
+                            <td>Section 1</td>
+                        </tr>
+                        <tr>
+                            <td><b>Welford (SS)</b></td>
+                            <td>SS<sub>n</sub> = SS<sub>n&minus;1</sub> + (x<sub>n</sub> &minus;
+                                M<sub>n&minus;1</sub>)(x<sub>n</sub> &minus; M<sub>n</sub>): old surprise times new
+                                surprise.</td>
+                            <td>Sections 2, 4</td>
+                        </tr>
+                        <tr>
+                            <td><b>Variance</b></td>
+                            <td>s<sub>n</sub>&sup2; = SS<sub>n</sub>/(n&minus;1), also s<sub>n</sub>&sup2; =
+                                [(n&minus;2)/(n&minus;1)]s<sub>n&minus;1</sub>&sup2; + &delta;<sub>n</sub>&sup2;/n.</td>
+                            <td>Section 3</td>
+                        </tr>
+                        <tr>
+                            <td><b>Why Welford</b></td>
+                            <td>One pass, constant memory, and numerically stable (the naive formula suffers
+                                catastrophic cancellation).</td>
+                            <td>Section 5</td>
+                        </tr>
+                        <tr>
+                            <td><b>Unbiasedness</b></td>
+                            <td>E[M<sub>n</sub>] = &mu; and E[s<sub>n</sub>&sup2;] = &sigma;&sup2; for every n; dividing
+                                SS by n gives &sigma;&sup2;(n&minus;1)/n.</td>
+                            <td>Section 9</td>
+                        </tr>
+                        <tr>
+                            <td><b>Standard error</b></td>
+                            <td>SD(M<sub>n</sub>) = &sigma;/&radic;n; the variance estimator also has spread &prop;
+                                1/&radic;n (with the fourth moment).</td>
+                            <td>Sections 8, 10</td>
+                        </tr>
+                        <tr>
+                            <td><b>Why it matters</b></td>
+                            <td>With one real sample we estimate unknown parameters without systematic error and
+                                quantify the uncertainty (confidence intervals, tests).</td>
+                            <td>Section 12</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
+    <footer class="google-nav-wrap">
+        <div class="google-nav-title">Which homework would you like to explore?</div>
+        <div class="google-pagination">
+            <a href="homework3.html" class="google-page-arrow" title="Previous: Homework 3">&larr; Previous</a>
+            <div class="google-page-numbers">
+                <a href="homework1-pt1.html" class="google-page-link"
+                    title="Homework 1 pt.1: From Private Key to Public Key">1.1</a>
+                <a href="homework1-pt2.html" class="google-page-link"
+                    title="Homework 1 pt.2: From Wallet Seed to Ethereum Address">1.2</a>
+                <a href="homework2.html" class="google-page-link"
+                    title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
+                <a href="homework3.html" class="google-page-link"
+                    title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+                <a href="homework4.html" class="google-page-link active"
+                    title="Homework 4: Welford's Recurrences and Sampling Mean and Variance">4</a>
+            </div>
+        </div>
+        <div class="google-home-link">
+            <a href="index.html">&larr; Return to Portfolio Overview</a>
+        </div>
+    </footer>
+
+    <script>
+        /* ================= helpers ================= */
+        const $ = id => document.getElementById(id);
+        const getCssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+        const fmt = v => {
+            if (!isFinite(v)) return '--';
+            if (Math.abs(v) < 1e-9) return '0';
+            if (Math.abs(v) >= 1000) return v.toLocaleString('en-US', { maximumFractionDigits: 1 });
+            if (Math.abs(v) >= 10) return v.toFixed(2);
+            if (Math.abs(v) >= 0.001) return v.toFixed(4);
+            return v.toExponential(2);
+        };
+        const fmtAxis = (v, eps) => {
+            if (Math.abs(v) <= eps) return '0';
+            const a = Math.abs(v);
+            if (a >= 10000 || a < 0.01) return v.toExponential(1);
+            if (a >= 100) return v.toFixed(0);
+            if (a >= 10) return v.toFixed(1);
+            return v.toFixed(2);
+        };
+        const meanOf = a => { let s = 0; for (const v of a) s += v; return s / a.length; };
+        const sdOf = a => { const m = meanOf(a); let s = 0; for (const v of a) { const d = v - m; s += d * d; } return Math.sqrt(s / (a.length - 1)); };
+
+        function setupCanvas(id) {
+            const canvas = $(id);
+            if (!canvas) return null;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width || canvas.clientWidth || 300;
+            const h = rect.height || canvas.clientHeight || 240;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+            ctx.font = '12px ' + getCssVar('--font-family');
+            return { ctx, w, h };
+        }
+
+        function drawLegend(ctx, items, pos, w, h, pad) {
+            ctx.font = '11px ' + getCssVar('--font-family');
+            let maxW = 0;
+            items.forEach(it => { maxW = Math.max(maxW, ctx.measureText(it.label).width); });
+            const bw = maxW + 34, bh = items.length * 15 + 8;
+            const x = pos.indexOf('r') >= 0 ? w - pad.r - bw - 6 : pad.l + 6;
+            const y = pos.indexOf('b') >= 0 ? h - pad.b - bh - 6 : pad.t + 6;
+            ctx.fillStyle = 'rgba(255,255,255,0.88)';
+            ctx.fillRect(x, y, bw, bh);
+            ctx.strokeStyle = getCssVar('--ln');
+            ctx.lineWidth = 1;
+            ctx.setLineDash([]);
+            ctx.strokeRect(x, y, bw, bh);
+            items.forEach((it, j) => {
+                const yy = y + 12 + j * 15;
+                ctx.strokeStyle = it.color;
+                ctx.lineWidth = 2.2;
+                ctx.setLineDash(it.dash ? [5, 3] : []);
+                ctx.beginPath(); ctx.moveTo(x + 6, yy - 3); ctx.lineTo(x + 24, yy - 3); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = getCssVar('--fg');
+                ctx.textAlign = 'left';
+                ctx.fillText(it.label, x + 29, yy);
+            });
+        }
+
+        /* ================= pt1 / pt2 pills ================= */
+        function layoutNav() {
+            const nb = document.querySelector('.navbar');
+            if (nb) document.documentElement.style.setProperty('--nav-h', nb.offsetHeight + 'px');
+        }
+        function updatePills() {
+            const nb = document.querySelector('.navbar');
+            const navH = nb ? nb.offsetHeight : 96;
+            const cur = $('pt2').getBoundingClientRect().top <= navH + 140 ? 'pt2' : 'pt1';
+            document.querySelectorAll('.pt-pill').forEach(a => a.classList.toggle('active', a.dataset.pt === cur));
+        }
+        window.addEventListener('scroll', updatePills, { passive: true });
+
+        /* ================= pt1: Welford demo ================= */
+        const fx = v => Number.isFinite(v) ? String(+v.toFixed(4)) : '--';
+        function runWelfordDemo() {
+            const off = +$('wfOff').value;
+            const data = $('wfData').value.split(/[\s,;]+/).filter(s => s.length).map(Number).filter(Number.isFinite).map(v => v + off);
+            if (data.length < 2) { $('wfOut').innerHTML = '<p class="mut">Enter at least two numbers.</p>'; return; }
+
+            let mean = 0, ss = 0, rows = '';
+            data.forEach((x, k) => {
+                const n = k + 1;
+                const d = x - mean;          // 1) surprise w.r.t. the old mean
+                mean += d / n;               // 2) Knuth
+                ss += d * (x - mean);        // 3) Welford
+                rows += `<tr><td>${n}</td><td class="num">${fx(x)}</td><td class="num">${fx(d)}</td><td class="num">${fx(mean)}</td><td class="num">${fx(ss)}</td><td class="num">${n > 1 ? fx(ss / (n - 1)) : '–'}</td></tr>`;
+            });
+            const n = data.length;
+            const wel = ss / (n - 1);
+
+            let m2 = 0; for (const x of data) m2 += x; m2 /= n;
+            let ss2 = 0; for (const x of data) ss2 += (x - m2) * (x - m2);
+            const ref = ss2 / (n - 1);
+
+            let sx = 0, sxx = 0; for (const x of data) { sx += x; sxx += x * x; }
+            const naive = (sxx - sx * sx / n) / (n - 1);
+
+            const err = v => { const e = Math.abs(v - ref); return e === 0 ? '0' : e.toExponential(2); };
+            const cls = v => Math.abs(v - ref) <= 1e-6 * Math.max(1, Math.abs(ref)) ? 'good-num' : 'bad-num';
+            const verdict = Math.abs(naive - ref) <= 1e-6 * Math.max(1, Math.abs(ref))
+                ? 'All three methods agree.'
+                : 'The naive formula has lost the result to rounding errors, while Welford is still accurate.';
+
+            $('wfOut').innerHTML =
+                `<div class="wrap"><table><thead><tr><th>n</th><th>x<sub>n</sub></th><th>&delta;<sub>n</sub> = x<sub>n</sub> &minus; M<sub>n&minus;1</sub></th><th>M<sub>n</sub></th><th>SS<sub>n</sub></th><th>s<sub>n</sub>&sup2;</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+                `<div class="wrap"><table><thead><tr><th>Method</th><th>Sample variance</th><th>Absolute difference from the two-pass reference</th></tr></thead><tbody>` +
+                `<tr><td><b>Welford</b> (3 lines, one pass)</td><td class="num ${cls(wel)}">${fx(wel)}</td><td class="num">${err(wel)}</td></tr>` +
+                `<tr><td><b>Two-pass</b> (reference, stores the data)</td><td class="num good-num">${fx(ref)}</td><td class="num">0</td></tr>` +
+                `<tr><td><b>Naive</b> &sum;x&sup2; &minus; (&sum;x)&sup2;/n</td><td class="num ${cls(naive)}">${fx(naive)}</td><td class="num">${err(naive)}</td></tr>` +
+                `</tbody></table></div><p class="mut" style="margin:8px 0 0;"><b>${verdict}</b></p>`;
+        }
+
+        /* ================= pt2: distributions ================= */
+        const comb = (n, k) => { let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return r; };
+        const binomPmf = (n, p) => Array.from({ length: n + 1 }, (_, k) => comb(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k));
+        function momentsOf(pmf) {
+            let mu = 0; pmf.forEach((p, k) => { mu += k * p; });
+            let s2 = 0, m3 = 0, m4 = 0;
+            pmf.forEach((p, k) => { const d = k - mu; s2 += d * d * p; m3 += d * d * d * p; m4 += d * d * d * d * p; });
+            return { mu, s2, m3, m4, skew: m3 / Math.pow(s2, 1.5) };
+        }
+        const DISTS = {
+            b03: { name: 'Binomial(10, 0.30)', pmf: binomPmf(10, 0.3), desc: 'Right-skewed: most systems resist, a few fall.' },
+            b05: { name: 'Binomial(10, 0.50)', pmf: binomPmf(10, 0.5), desc: 'Symmetric and bell-shaped.' },
+            uni: { name: 'Uniform on {0,...,10}', pmf: Array(11).fill(1 / 11), desc: 'Every score is equally likely.' },
+            bim: { name: 'Bimodal', pmf: [10, 5, 2, 1, 1, 1, 1, 1, 2, 5, 10].map(v => v / 39), desc: 'Either very low or very high: far from a bell.' }
+        };
+        Object.values(DISTS).forEach(d => { d.mo = momentsOf(d.pmf); });
+
+        const CPS = [2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+        let EXP = null, playTimer = null;
+
+        /* ================= pt2: simulation with Welford ================= */
+        function runExperiment() {
+            const dist = DISTS[$('distSel').value];
+            const m = +$('mSel').value, N = +$('nSel').value;
+            const cps = CPS.filter(c => c <= N);
+            if (cps[cps.length - 1] !== N) cps.push(N);
+
+            const cdf = []; let acc = 0;
+            dist.pmf.forEach(p => { acc += p; cdf.push(acc); });
+
+            const K = Math.min(30, m);
+            const means = cps.map(() => new Float64Array(m));
+            const vars = cps.map(() => new Float64Array(m));
+            const bvars = cps.map(() => new Float64Array(m));
+            const pm = [], pv = [];
+
+            for (let h = 0; h < m; h++) {
+                let mean = 0, ss = 0, ci = 0;
+                const keep = h < K;
+                const a = keep ? new Float32Array(N + 1) : null;
+                const b = keep ? new Float32Array(N + 1) : null;
+                for (let i = 1; i <= N; i++) {
+                    const r = Math.random();
+                    let x = 0; while (x < 10 && r > cdf[x]) x++;
+                    const d = x - mean;           // Welford: 3 lines of core logic
+                    mean += d / i;
+                    ss += d * (x - mean);
+                    if (keep) { a[i] = mean; b[i] = i > 1 ? ss / (i - 1) : NaN; }
+                    if (i === cps[ci]) {
+                        means[ci][h] = mean; vars[ci][h] = ss / (i - 1); bvars[ci][h] = ss / i; ci++;
+                    }
+                }
+                if (keep) { pm.push(a); pv.push(b); }
+            }
+
+            const mo = dist.mo;
+            const stats = cps.map((n, k) => {
+                const am = meanOf(means[k]), av = meanOf(vars[k]), ab = meanOf(bvars[k]);
+                const sdM = sdOf(means[k]), sdV = sdOf(vars[k]);
+                const sdMT = Math.sqrt(mo.s2 / n);
+                const sdVT = Math.sqrt((mo.m4 - (n - 3) / (n - 1) * mo.s2 * mo.s2) / n);
+                return {
+                    n, am, av, ab, sdM, sdV, sdMT, sdVT,
+                    zM: (am - mo.mu) / (sdMT / Math.sqrt(m)),
+                    zV: (av - mo.s2) / (sdVT / Math.sqrt(m)),
+                    biasT: mo.s2 * (n - 1) / n
+                };
+            });
+
+            EXP = { dist, mo, m, N, cps, means, vars, bvars, pm, pv, stats };
+
+            $('ckSlider').max = cps.length - 1;
+            let ck = parseInt($('ckSlider').value, 10);
+            if (ck >= cps.length) $('ckSlider').value = cps.length - 1;
+            renderAll();
+        }
+
+        /* ================= generic charts ================= */
+        function plotChart(id, o) {
+            const st = setupCanvas(id); if (!st) return;
+            const { ctx, w, h } = st;
+            const pad = { l: 62, r: 16, t: 22, b: 30 };
+            const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+            const tx = v => o.logX ? Math.log10(v) : v;
+            const ty = v => o.logY ? Math.log10(v) : v;
+            const xa = tx(o.xs[0]), xb = tx(o.xs[o.xs.length - 1]);
+            const mapX = v => pad.l + (tx(v) - xa) / ((xb - xa) || 1) * pw;
+
+            let lo = Infinity, hi = -Infinity;
+            const eat = v => {
+                if (!isFinite(v) || (o.logY && v <= 0)) return;
+                const t = ty(v); if (t < lo) lo = t; if (t > hi) hi = t;
+            };
+            if (o.yRange) { lo = ty(o.yRange[0]); hi = ty(o.yRange[1]); }
+            else {
+                o.series.forEach(s => s.y.forEach(eat));
+                const p = (hi - lo) * 0.1 || 1; lo -= p; hi += p;
+            }
+            const mapY = v => pad.t + (1 - (ty(v) - lo) / (hi - lo)) * ph;
+
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 0.5;
+            for (let g = 0; g <= 4; g++) {
+                const gy = pad.t + ph * g / 4;
+                ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(w - pad.r, gy); ctx.stroke();
+                const t = lo + (hi - lo) * (4 - g) / 4;
+                const val = o.logY ? Math.pow(10, t) : t;
+                ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'right';
+                ctx.fillText(fmtAxis(val, o.logY ? 0 : (hi - lo) * 1e-6), pad.l - 4, gy + 4);
+            }
+
+            ctx.save();
+            ctx.beginPath(); ctx.rect(pad.l, pad.t, pw, ph); ctx.clip();
+            if (o.band) {
+                ctx.fillStyle = o.band.color; ctx.beginPath();
+                o.xs.forEach((x, i) => { const X = mapX(x), Y = mapY(o.band.hi[i]); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+                for (let i = o.xs.length - 1; i >= 0; i--) ctx.lineTo(mapX(o.xs[i]), mapY(o.band.lo[i]));
+                ctx.closePath(); ctx.fill();
+            }
+            o.series.forEach(s => {
+                ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.lineWidth = s.width || 2;
+                ctx.setLineDash(s.dash ? [6, 4] : (s.dotted ? [2, 3] : []));
+                ctx.beginPath(); let pen = false;
+                s.y.forEach((v, i) => {
+                    if (!isFinite(v) || (o.logY && v <= 0)) { pen = false; return; }
+                    const X = mapX(o.xs[i]), Y = mapY(v);
+                    if (!pen) { ctx.moveTo(X, Y); pen = true; } else ctx.lineTo(X, Y);
+                });
+                ctx.stroke(); ctx.setLineDash([]);
+                if (s.dots) s.y.forEach((v, i) => {
+                    if (!isFinite(v) || (o.logY && v <= 0)) return;
+                    ctx.beginPath(); ctx.arc(mapX(o.xs[i]), mapY(v), 3.5, 0, Math.PI * 2); ctx.fill();
+                });
+            });
+            ctx.restore();
+
+            ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'center';
+            (o.xTicks || []).forEach(t => { if (t >= o.xs[0] && t <= o.xs[o.xs.length - 1]) ctx.fillText(t.toLocaleString('en-US'), mapX(t), h - 10); });
+
+            drawLegend(ctx, o.series.filter(s => s.label).map(s => ({ label: s.label, color: s.color, dash: s.dash || s.dotted })), o.legend || 'tr', w, h, pad);
+        }
+
+        function drawPaths(id, o) {
+            const st = setupCanvas(id); if (!st) return;
+            const { ctx, w, h } = st;
+            const pad = { l: 52, r: 14, t: 18, b: 30 };
+            const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+            const idx = o.idx;
+            const xa = Math.log10(idx[0]), xb = Math.log10(idx[idx.length - 1]);
+            const mapX = i => pad.l + (Math.log10(i) - xa) / ((xb - xa) || 1) * pw;
+
+            let lo = o.ref, hi = o.ref;
+            o.paths.forEach(p => idx.forEach(i => { const v = p[i]; if (isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } }));
+            idx.forEach(i => { lo = Math.min(lo, o.band.lo(i)); hi = Math.max(hi, o.band.hi(i)); });
+            const pp = (hi - lo) * 0.06 || 1; lo -= pp; hi += pp;
+            const mapY = v => pad.t + (1 - (v - lo) / (hi - lo)) * ph;
+
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 0.5;
+            for (let g = 0; g <= 4; g++) {
+                const gy = pad.t + ph * g / 4;
+                ctx.beginPath(); ctx.moveTo(pad.l, gy); ctx.lineTo(w - pad.r, gy); ctx.stroke();
+                ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'right';
+                ctx.fillText(fmtAxis(lo + (hi - lo) * (4 - g) / 4, (hi - lo) * 1e-6), pad.l - 4, gy + 4);
+            }
+
+            ctx.fillStyle = 'rgba(61, 90, 254, 0.10)'; ctx.beginPath();
+            idx.forEach((i, k) => { const Y = mapY(o.band.hi(i)); k ? ctx.lineTo(mapX(i), Y) : ctx.moveTo(mapX(i), Y); });
+            for (let k = idx.length - 1; k >= 0; k--) ctx.lineTo(mapX(idx[k]), mapY(o.band.lo(idx[k])));
+            ctx.fill();
+
+            const cols = [getCssVar('--ac'), getCssVar('--ac2'), getCssVar('--purple'), getCssVar('--cyan')];
+            o.paths.forEach((p, j) => {
+                ctx.strokeStyle = cols[j % cols.length]; ctx.globalAlpha = 0.6; ctx.lineWidth = 1;
+                ctx.beginPath(); let pen = false;
+                idx.forEach(i => {
+                    const v = p[i]; if (!isFinite(v)) { pen = false; return; }
+                    if (!pen) { ctx.moveTo(mapX(i), mapY(v)); pen = true; } else ctx.lineTo(mapX(i), mapY(v));
+                });
+                ctx.stroke();
+            });
+            ctx.globalAlpha = 1;
+
+            ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+            ctx.beginPath(); ctx.moveTo(pad.l, mapY(o.ref)); ctx.lineTo(w - pad.r, mapY(o.ref)); ctx.stroke(); ctx.setLineDash([]);
+
+            ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'center';
+            [2, 10, 100, 1000, 10000].forEach(t => { if (t >= idx[0] && t <= idx[idx.length - 1]) ctx.fillText(t.toLocaleString('en-US'), mapX(t), h - 10); });
+        }
+
+        function histChart(id, data, o) {
+            const st = setupCanvas(id); if (!st) return;
+            const { ctx, w, h } = st;
+            const pad = { l: 40, r: 14, t: 22, b: 30 };
+            const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+            const bins = o.bins, lo = o.lo, hi = o.hi, bw = (hi - lo) / bins;
+            const cnt = new Float64Array(bins);
+            for (const v of data) { let b = Math.floor((v - lo) / bw); if (b < 0) b = 0; if (b >= bins) b = bins - 1; cnt[b]++; }
+            const dens = Array.from(cnt, c => c / (data.length * bw));
+            let ymax = 0; dens.forEach(d => { if (d > ymax) ymax = d; });
+            if (o.normal) ymax = Math.max(ymax, 1 / (o.normal.sd * Math.sqrt(2 * Math.PI)));
+            ymax *= 1.15;
+            const X = v => pad.l + (v - lo) / (hi - lo) * pw;
+            const Y = d => pad.t + (1 - d / ymax) * ph;
+
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(w - pad.r, Y(0)); ctx.stroke();
+
+            ctx.fillStyle = 'rgba(61, 90, 254, 0.48)';
+            for (let b = 0; b < bins; b++) {
+                const x0 = X(lo + b * bw), x1 = X(lo + (b + 1) * bw), yt = Y(dens[b]);
+                ctx.fillRect(x0 + 0.5, yt, Math.max(1, x1 - x0 - 1), Y(0) - yt);
+            }
+
+            if (o.normal) {
+                ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 2.2; ctx.beginPath();
+                for (let s = 0; s <= 120; s++) {
+                    const xv = lo + (hi - lo) * s / 120, z = (xv - o.normal.mean) / o.normal.sd;
+                    const py = Y(Math.exp(-0.5 * z * z) / (o.normal.sd * Math.sqrt(2 * Math.PI)));
+                    s ? ctx.lineTo(X(xv), py) : ctx.moveTo(X(xv), py);
+                }
+                ctx.stroke();
+            }
+
+            (o.lines || []).forEach(L => {
+                if (L.x < lo || L.x > hi) return;
+                ctx.strokeStyle = L.color; ctx.lineWidth = 2; ctx.setLineDash(L.dash ? [6, 4] : []);
+                ctx.beginPath(); ctx.moveTo(X(L.x), pad.t); ctx.lineTo(X(L.x), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+            });
+
+            ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono');
+            ctx.textAlign = 'left'; ctx.fillText(fmtAxis(lo, 1e-9), pad.l, h - 10);
+            ctx.textAlign = 'center'; ctx.fillText(fmtAxis((lo + hi) / 2, 1e-9), pad.l + pw / 2, h - 10);
+            ctx.textAlign = 'right'; ctx.fillText(fmtAxis(hi, 1e-9), w - pad.r, h - 10);
+
+            const items = [];
+            if (o.normal) items.push({ label: 'N(\u03bc, \u03c3\u00b2/n) from theory', color: '#d9480f' });
+            (o.lines || []).forEach(L => items.push({ label: L.label, color: L.color, dash: L.dash }));
+            drawLegend(ctx, items, o.legend || 'tr', w, h, pad);
+        }
+
+        /* ================= renderers ================= */
+        function renderDist() {
+            const st = setupCanvas('canvasDist'); if (!st) return;
+            const { ctx, w, h } = st;
+            const pmf = EXP.dist.pmf, mo = EXP.mo;
+            const pad = { l: 44, r: 14, t: 22, b: 30 };
+            const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b, bw = pw / 11;
+            const pmax = Math.max(...pmf) * 1.2;
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad.l, pad.t + ph); ctx.lineTo(w - pad.r, pad.t + ph); ctx.stroke();
+            pmf.forEach((p, k) => {
+                const x = pad.l + k * bw, bh = p / pmax * ph;
+                ctx.fillStyle = 'rgba(61, 90, 254, 0.55)';
+                ctx.fillRect(x + 4, pad.t + ph - bh, bw - 8, bh);
+                ctx.fillStyle = getCssVar('--fg'); ctx.font = '10.5px ' + getCssVar('--font-mono'); ctx.textAlign = 'center';
+                ctx.fillText((p * 100).toFixed(1) + '%', x + bw / 2, pad.t + ph - bh - 4);
+                ctx.fillStyle = getCssVar('--mut'); ctx.fillText(String(k), x + bw / 2, h - 10);
+            });
+            const mx = pad.l + (mo.mu + 0.5) * bw;
+            ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+            ctx.beginPath(); ctx.moveTo(mx, pad.t); ctx.lineTo(mx, pad.t + ph); ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = '#d9480f'; ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'left';
+            ctx.fillText('\u03bc = ' + mo.mu.toFixed(2), mx + 6, pad.t + 10);
+
+            $('distReadout').textContent = `${EXP.dist.name}: mu = ${mo.mu.toFixed(3)}, sigma^2 = ${mo.s2.toFixed(3)} (sigma = ${Math.sqrt(mo.s2).toFixed(3)}), skewness = ${mo.skew.toFixed(2)}. ${EXP.dist.desc} Simulation: m = ${EXP.m.toLocaleString('en-US')} hackers, up to n = ${EXP.N.toLocaleString('en-US')} systems each.`;
+        }
+
+        function logIdx(N) {
+            const out = [];
+            for (let t = 0; t <= 160; t++) {
+                const i = Math.max(2, Math.round(2 * Math.pow(N / 2, t / 160)));
+                if (!out.length || out[out.length - 1] !== i) out.push(i);
+            }
+            return out;
+        }
+
+        function renderPaths() {
+            const { mo, N, pm, pv } = EXP;
+            const k = Math.min(parseInt($('pathK').value, 10), pm.length);
+            $('pathKDisplay').textContent = k;
+            const idx = logIdx(N), sd = Math.sqrt(mo.s2);
+            drawPaths('canvasPathMean', {
+                paths: pm.slice(0, k), idx, ref: mo.mu,
+                band: { lo: i => mo.mu - 2 * sd / Math.sqrt(i), hi: i => mo.mu + 2 * sd / Math.sqrt(i) }
+            });
+            const sdV = i => Math.sqrt((mo.m4 - (i - 3) / (i - 1) * mo.s2 * mo.s2) / i);
+            drawPaths('canvasPathVar', {
+                paths: pv.slice(0, k), idx, ref: mo.s2,
+                band: { lo: i => Math.max(0, mo.s2 - 2 * sdV(i)), hi: i => mo.s2 + 2 * sdV(i) }
+            });
+            $('pathReadout').textContent = `${k} hackers shown. At the end (i = ${N}) the running means range over ${fmt(Math.min(...pm.slice(0, k).map(p => p[N])))} to ${fmt(Math.max(...pm.slice(0, k).map(p => p[N])))} (theory: mu = ${mo.mu.toFixed(3)}, band +/- ${fmt(2 * sd / Math.sqrt(N))}); the running variances range over ${fmt(Math.min(...pv.slice(0, k).map(p => p[N])))} to ${fmt(Math.max(...pv.slice(0, k).map(p => p[N])))} (theory: sigma^2 = ${mo.s2.toFixed(3)}).`;
+        }
+
+        function renderHists() {
+            const { mo, cps, means, vars, stats } = EXP;
+            const ck = parseInt($('ckSlider').value, 10);
+            const n = cps[ck], bins = parseInt($('binsSlider').value, 10);
+            $('ckDisplay').textContent = n.toLocaleString('en-US');
+            $('binsDisplay').textContent = bins;
+            const s = stats[ck];
+
+            const sdMT = s.sdMT;
+            histChart('canvasHistMean', means[ck], {
+                bins, lo: mo.mu - 4.2 * sdMT, hi: mo.mu + 4.2 * sdMT,
+                normal: { mean: mo.mu, sd: sdMT },
+                lines: [{ x: mo.mu, color: '#d9480f', dash: true, label: '\u03bc (theory)' }, { x: s.am, color: '#059669', label: 'average of the sampling means' }],
+                legend: 'tl'
+            });
+
+            let vmax = 0; for (const v of vars[ck]) if (v > vmax) vmax = v;
+            histChart('canvasHistVar', vars[ck], {
+                bins, lo: 0, hi: Math.max(vmax * 1.05, mo.s2 * 1.5),
+                lines: [
+                    { x: mo.s2, color: '#d9480f', dash: true, label: '\u03c3\u00b2 (theory)' },
+                    { x: s.av, color: '#059669', label: 'average of s\u00b2 (divide by n\u22121)' },
+                    { x: s.ab, color: '#f43f5e', label: 'average of SS/n (divide by n)' }
+                ],
+                legend: 'tr'
+            });
+
+            $('histReadout').textContent = `n = ${n}: sampling means have average ${s.am.toFixed(4)} (mu = ${mo.mu.toFixed(4)}) and SD ${s.sdM.toFixed(4)} (theory sigma/sqrt(n) = ${s.sdMT.toFixed(4)}); sampling variances have average ${s.av.toFixed(4)} (sigma^2 = ${mo.s2.toFixed(4)}) and SD ${s.sdV.toFixed(4)} (theory ${s.sdVT.toFixed(4)}); dividing by n instead of n-1 gives average ${s.ab.toFixed(4)} (theory ${s.biasT.toFixed(4)}).`;
+        }
+
+        function renderAverages() {
+            const { mo, cps, stats, m } = EXP;
+            const sd = Math.sqrt(mo.s2);
+            plotChart('canvasAvgMean', {
+                xs: cps, logX: true, xTicks: [2, 10, 100, 1000, 5000],
+                yRange: [mo.mu - 0.3 * sd, mo.mu + 0.3 * sd],
+                band: { color: 'rgba(16,185,129,0.15)', lo: stats.map(s => mo.mu - 2 * s.sdMT / Math.sqrt(m)), hi: stats.map(s => mo.mu + 2 * s.sdMT / Math.sqrt(m)) },
+                series: [
+                    { y: cps.map(() => mo.mu), color: '#d9480f', dash: true, label: '\u03bc (theory)' },
+                    { y: stats.map(s => s.am), color: getCssVar('--ac'), dots: true, label: 'average of sampling means' }
+                ],
+                legend: 'br'
+            });
+            plotChart('canvasAvgVar', {
+                xs: cps, logX: true, xTicks: [2, 10, 100, 1000, 5000],
+                yRange: [0, mo.s2 * 1.2],
+                band: { color: 'rgba(16,185,129,0.15)', lo: stats.map(s => mo.s2 - 2 * s.sdVT / Math.sqrt(m)), hi: stats.map(s => mo.s2 + 2 * s.sdVT / Math.sqrt(m)) },
+                series: [
+                    { y: cps.map(() => mo.s2), color: '#d9480f', dash: true, label: '\u03c3\u00b2 (theory)' },
+                    { y: stats.map(s => s.biasT), color: '#f43f5e', dotted: true, label: '\u03c3\u00b2(n\u22121)/n (theory of SS/n)' },
+                    { y: stats.map(s => s.ab), color: '#f43f5e', dots: true, label: 'average of SS/n' },
+                    { y: stats.map(s => s.av), color: getCssVar('--ac'), dots: true, label: 'average of s\u00b2' }
+                ],
+                legend: 'br'
+            });
+            const last = stats[stats.length - 1], first = stats[0];
+            $('avgReadout').textContent = `At n = ${first.n}: avg of means ${first.am.toFixed(4)} (mu ${mo.mu.toFixed(4)}), avg of s^2 ${first.av.toFixed(4)} (sigma^2 ${mo.s2.toFixed(4)}), avg of SS/n ${first.ab.toFixed(4)}. At n = ${last.n}: ${last.am.toFixed(4)}, ${last.av.toFixed(4)}, ${last.ab.toFixed(4)}.`;
+        }
+
+        function renderSpread() {
+            const { cps, stats, m } = EXP;
+            plotChart('canvasSpread', {
+                xs: cps, logX: true, logY: true, xTicks: [2, 10, 100, 1000, 5000], legend: 'tr',
+                series: [
+                    { y: stats.map(s => s.sdMT), color: getCssVar('--ac'), dash: true, label: '\u03c3/\u221an (theory, mean)' },
+                    { y: stats.map(s => s.sdM), color: getCssVar('--ac'), dots: true, width: 0.1, label: 'SD of sampling means (simulated)' },
+                    { y: stats.map(s => s.sdVT), color: '#f43f5e', dash: true, label: 'theory, variance' },
+                    { y: stats.map(s => s.sdV), color: '#f43f5e', dots: true, width: 0.1, label: 'SD of sampling variances (simulated)' }
+                ]
+            });
+            const a = stats[0], b = stats[stats.length - 1];
+            $('spreadReadout').textContent = `From n = ${a.n} to n = ${b.n}: SD of the sampling means goes from ${a.sdM.toFixed(4)} to ${b.sdM.toFixed(4)} (theory ${a.sdMT.toFixed(4)} to ${b.sdMT.toFixed(4)}); SD of the sampling variances goes from ${a.sdV.toFixed(4)} to ${b.sdV.toFixed(4)} (theory ${a.sdVT.toFixed(4)} to ${b.sdVT.toFixed(4)}). Ratio of n: ${(b.n / a.n).toFixed(0)}, ratio of the means' SD: ${(a.sdM / b.sdM).toFixed(1)} (expected sqrt = ${Math.sqrt(b.n / a.n).toFixed(1)}).`;
+        }
+
+        function renderTable() {
+            const { mo, stats } = EXP;
+            const ck = parseInt($('ckSlider').value, 10);
+            const zc = z => `<td class="num ${Math.abs(z) > 3 ? 'bad-num' : ''}">${z.toFixed(2)}</td>`;
+            $('summaryBody').innerHTML = stats.map((s, k) =>
+                `<tr${k === ck ? ' class="sel"' : ''}><td>${s.n.toLocaleString('en-US')}</td>` +
+                `<td>${s.am.toFixed(4)} <span class="mut">(&mu; = ${mo.mu.toFixed(3)})</span></td>${zc(s.zM)}` +
+                `<td>${s.av.toFixed(4)} <span class="mut">(&sigma;&sup2; = ${mo.s2.toFixed(3)})</span></td>${zc(s.zV)}` +
+                `<td>${s.ab.toFixed(4)} <span class="mut">[${s.biasT.toFixed(4)}]</span></td>` +
+                `<td>${s.sdM.toFixed(4)} / ${s.sdMT.toFixed(4)}</td>` +
+                `<td>${s.sdV.toFixed(4)} / ${s.sdVT.toFixed(4)}</td></tr>`).join('');
+        }
+
+        function renderConclusion() {
+            const { mo, stats, m } = EXP;
+            const ck = parseInt($('ckSlider').value, 10);
+            const s = stats[ck], f = stats[0], l = stats[stats.length - 1];
+            $('liveConclusion').innerHTML =
+                `<b>What this run shows</b> (${EXP.dist.name}, m = ${m.toLocaleString('en-US')} hackers, selected n = ${s.n}): ` +
+                `the average of the sampling means is <b>${s.am.toFixed(3)}</b> against &mu; = <b>${mo.mu.toFixed(3)}</b>, and the average of the sampling variances is <b>${s.av.toFixed(3)}</b> against &sigma;&sup2; = <b>${mo.s2.toFixed(3)}</b>. ` +
+                `Dividing by n instead of n&minus;1 would give ${s.ab.toFixed(3)}. ` +
+                `The spread of the sampling means among hackers goes from <b>${f.sdM.toFixed(3)}</b> (n = ${f.n}) to <b>${l.sdM.toFixed(3)}</b> (n = ${l.n.toLocaleString('en-US')}), and that of the sampling variances from <b>${f.sdV.toFixed(3)}</b> to <b>${l.sdV.toFixed(3)}</b>.`;
+        }
+
+        function renderAll() {
+            if (!EXP) return;
+            renderDist(); renderPaths(); renderHists(); renderAverages(); renderSpread(); renderTable(); renderConclusion();
+        }
+
+        /* ================= events ================= */
+        $('btnWf').addEventListener('click', runWelfordDemo);
+        $('wfOff').addEventListener('change', runWelfordDemo);
+        $('wfData').addEventListener('keydown', e => { if (e.key === 'Enter') runWelfordDemo(); });
+
+        $('btnRunExp').addEventListener('click', runExperiment);
+        $('distSel').addEventListener('change', runExperiment);
+        $('mSel').addEventListener('change', runExperiment);
+        $('nSel').addEventListener('change', runExperiment);
+        ['pathK', 'ckSlider', 'binsSlider'].forEach(id => $(id).addEventListener('input', renderAll));
+
+        $('btnPlayN').addEventListener('click', function () {
+            if (playTimer) { clearInterval(playTimer); playTimer = null; this.textContent = 'Play Progression'; return; }
+            this.textContent = 'Stop';
+            const slider = $('ckSlider');
+            if (parseInt(slider.value, 10) >= parseInt(slider.max, 10)) slider.value = 0;
+            renderAll();
+            playTimer = setInterval(() => {
+                if (parseInt(slider.value, 10) >= parseInt(slider.max, 10)) {
+                    clearInterval(playTimer); playTimer = null; $('btnPlayN').textContent = 'Play Progression'; return;
+                }
+                slider.value = parseInt(slider.value, 10) + 1;
+                renderAll();
+            }, 800);
+        });
+
+
+        window.addEventListener('resize', () => { layoutNav(); if (EXP) renderAll(); });
+
+        /* ================= init ================= */
+        layoutNav();
+        runWelfordDemo();
+        runExperiment();
+        updatePills();
+    </script>
+
+</body>
+
+</html>

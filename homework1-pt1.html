@@ -38,19 +38,40 @@
             <div class="card"><b>3. One-way, not a hash</b><br>Q shows some structure, so it is not a scrambler; its
                 security is that finding k from Q is infeasible (ECDLP).</div>
         </div>
+        <!-- WHAT ARE WE DOING AND WHAT IS THE OBJECTIVE -->
         <div class="card">
-            <h3>What is this about?</h3>
-            <div class="grid2" style="margin:6px 0 10px">
-                <div><b>Private key</b>: a secret number k. Whoever knows it can sign transactions, that is, prove the
-                    account is theirs.</div>
-                <div><b>Public key</b>: a point Q computed from k (Q = k·G). It can be shared: others use it to check
-                    signatures, but cannot get k back from it.</div>
-            </div>
-            <p style="margin:0"><b>Purpose of this exercise:</b> compute Q = k·G on a tiny curve (point addition, then
-                the double-and-add shortcut), watch it step by step, and test statistically whether the results look
-                random. The goal is to see why this is a <i>one-way function</i> and how it differs from a <i>hash
-                    function</i>.</p>
+            <h3 style="margin-top:0;">What are we doing and what is the objective?</h3>
+            <p>
+                <b>What we are doing:</b> We explore public-key cryptography on a toy elliptic curve <code>y&sup2; = x&sup3; + 7 (mod 17)</code>. Given a secret scalar private key <code>k</code> and generator point <code>G</code>, we compute the public key point <code>Q = k&middot;G</code> using two methods: the naive iterative addition (slow, <i>k</i> additions) and the logarithmic <b>double-and-add</b> algorithm (fast, ~log<sub>2</sub>(<i>k</i>) operations).
+            </p>
+            <p>
+                <b>Statistical analysis:</b> We evaluate whether the coordinates of points generated along the curve behave like random output or display geometric structure, comparing them against a cryptographically secure hash function (SHA-256).
+            </p>
+            <p style="margin-bottom:0;">
+                <b>The objective:</b> To demonstrate that an elliptic curve is a <b>one-way algebraic trapdoor</b> rather than a scrambler. Its security stems not from destroying all mathematical structure, but from the computational hardness of reversing point multiplication: the Elliptic Curve Discrete Logarithm Problem (ECDLP).
+            </p>
         </div>
+
+        <!-- STUDY GUIDE: START HERE -->
+        <details class="study" open>
+            <summary>Study guide: start here (the vocabulary, from zero)</summary>
+            <div class="study-body">
+                <h4>Private key versus public key</h4>
+                <ul>
+                    <li><b>Private key (k):</b> a secret integer chosen uniformly at random. In production (secp256k1) it is a 256-bit number. Anyone who holds <i>k</i> controls the account and can sign transactions.</li>
+                    <li><b>Public key (Q):</b> a point (x, y) on the elliptic curve obtained by multiplying the base point: <i>Q = k&middot;G</i>. It can be shared publicly; anyone can verify signatures made with <i>k</i>, but reversing <i>Q</i> to find <i>k</i> is computationally impossible.</li>
+                </ul>
+
+                <h4>Words you need</h4>
+                <ul>
+                    <li><b>Elliptic curve mod p:</b> the set of points (x, y) satisfying <i>y&sup2; = x&sup3; + ax + b (mod p)</i> together with a special point at infinity &infin; acting as the identity element.</li>
+                    <li><b>Generator point (G):</b> a fixed base point on the curve whose repeated additions generate a cyclic subgroup of points.</li>
+                    <li><b>Double-and-add:</b> an efficient algorithm that computes <i>k&middot;G</i> in <i>O(log k)</i> steps by scanning the binary representation of <i>k</i>, doubling the current point at each bit and adding <i>G</i> when the bit is 1.</li>
+                    <li><b>ECDLP (Elliptic Curve Discrete Logarithm Problem):</b> the mathematical problem of finding <i>k</i> given <i>G</i> and <i>Q = k&middot;G</i>. No polynomial-time classical algorithm is known.</li>
+                    <li><b>One-way function vs hash function:</b> an elliptic curve preserves algebraic group properties (homomorphic structure: <i>(a+b)G = aG + bG</i>), whereas a cryptographic hash function is designed to be a pseudorandom avalanche scrambler with no algebraic linearity.</li>
+                </ul>
+            </div>
+        </details>
 
         <div class="card">
             <p class="mut" id="info" style="margin-top:0"></p>
@@ -124,6 +145,49 @@
             <p><b>Why Ethereum uses both.</b> The curve turns the private key into a public key; a hash then turns the
                 public key into the short address.</p>
         </div>
+
+        <!-- SUMMARY -->
+        <h2>Summary</h2>
+        <div class="card">
+            <div class="wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concept</th>
+                            <th>One-sentence version</th>
+                            <th>Where to see it</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><b>Iterative addition</b></td>
+                            <td>Computing Q = k&middot;G by hopping k times from G; simple but needs O(k) additions, infeasible for 256-bit keys.</td>
+                            <td>Section 1</td>
+                        </tr>
+                        <tr>
+                            <td><b>Double-and-add</b></td>
+                            <td>Logarithmic shortcut scanning binary bits of k: double every step, add G when bit is 1; runs in O(log k) operations.</td>
+                            <td>Section 2</td>
+                        </tr>
+                        <tr>
+                            <td><b>Group law geometry</b></td>
+                            <td>Point addition draws secants and reflections; doubling uses the tangent line, mod p wraps the arithmetic over a finite field.</td>
+                            <td>Section 3</td>
+                        </tr>
+                        <tr>
+                            <td><b>Statistical tests</b></td>
+                            <td>Coordinates show near-uniform bit balance and avalanche, but also algebraic structure (x-pairs, group law relations).</td>
+                            <td>Section 4</td>
+                        </tr>
+                        <tr>
+                            <td><b>Trapdoor vs Hash</b></td>
+                            <td>A hash scrambles data irreversibly (blender); ECC multiplication is a one-way algebraic trapdoor (padlock) secured by ECDLP.</td>
+                            <td>Section 5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </main>
 
     <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
@@ -139,6 +203,8 @@
                     title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
                 <a href="homework3.html" class="google-page-link"
                     title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+                <a href="homework4.html" class="google-page-link"
+                    title="Homework 4: Welford's Recurrences and Sampling Mean and Variance">4</a>
             </div>
             <a href="homework1-pt2.html" class="google-page-arrow" title="Next: Homework 1 pt.2">Next &rarr;</a>
         </div>

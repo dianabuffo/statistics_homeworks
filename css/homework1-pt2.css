@@ -838,6 +838,22 @@ footer a:hover {
   text-decoration: none;
 }
 
+/* DETAILS & SUMMARY */
+details {
+  margin: 14px 0;
+  background: #f8faff;
+  border: 1px solid var(--ln);
+  border-radius: 14px;
+  padding: 12px 18px;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ac);
+  outline: none;
+}
+
 @media (max-width: 768px) {
   header {
     padding: 24px 18px;

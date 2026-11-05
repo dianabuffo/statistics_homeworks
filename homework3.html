@@ -77,6 +77,29 @@
       </p>
     </div>
 
+    <!-- STUDY GUIDE: START HERE -->
+    <details class="study" open>
+      <summary>Study guide: start here (the vocabulary, from zero)</summary>
+      <div class="study-body">
+        <h4>Key concepts (the core distinction)</h4>
+        <ul>
+          <li><b>Cumulative Sum (S<sub>n</sub>):</b> the total score accumulated after <i>n</i> systems. Because each step adds random noise, the variance of S<sub>n</sub> grows linearly with <i>n</i> (scaling as <i>n&sigma;&sup2;</i>), so trajectories spread out wider and wider.</li>
+          <li><b>Empirical Average (S<sub>n</sub>/n):</b> the average score per system. By the Law of Large Numbers, the noise averages out and S<sub>n</sub>/n converges strictly to the theoretical expectation &mu;. Its variance shrinks as &sigma;&sup2;/n.</li>
+          <li><b>Normalized Score (S<sub>n</sub>/&radic;n):</b> the unique scaling where the variance remains constant (&sigma;&sup2;) regardless of <i>n</i>. When standardized, its distribution converges to the standard Gaussian bell curve by the Central Limit Theorem.</li>
+        </ul>
+
+        <h4>Words you need</h4>
+        <ul>
+          <li><b>Stochastic process:</b> a collection of random variables indexed by time or sequence (here, the attacker's path through <i>n</i> consecutive systems).</li>
+          <li><b>Rademacher step:</b> a step taking values &minus;1 or +1 with equal probability (1/2), with mean &mu; = 0 and variance &sigma;&sup2; = 1 (symmetric walk).</li>
+          <li><b>Bernoulli step:</b> a binary step taking value 1 (breach with probability <i>p</i>) or 0 (failure with probability 1 &minus; <i>p</i>), with mean &mu; = <i>p</i> and variance &sigma;&sup2; = <i>p</i>(1 &minus; <i>p</i>).</li>
+          <li><b>Weak Law of Large Numbers (WLLN):</b> guarantees that the sample average converges in probability to the expected value &mu; as <i>n</i> &rarr; &infin;; bounded formally by Chebyshev's inequality.</li>
+          <li><b>Central Limit Theorem (CLT):</b> states that the standardized sum of independent, identically distributed variables approaches a standard normal distribution N(0, 1) as <i>n</i> becomes large, regardless of the underlying distribution's shape.</li>
+          <li><b>Monte Carlo ensemble:</b> running the simulation across <i>m</i> independent attackers to empirically observe the distribution of outcomes predicted by analytical probability theory.</li>
+        </ul>
+      </div>
+    </details>
+
     <!-- GLOBAL SIMULATION CONTROLS -->
     <div class="card">
       <h3 style="margin-top:0;">Global Stochastic Simulation Studio</h3>
@@ -654,6 +677,54 @@
       </p>
     </div>
 
+    <!-- SUMMARY -->
+    <h2>Summary</h2>
+    <div class="card">
+      <div class="wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Concept</th>
+              <th>One-sentence version</th>
+              <th>Where to see it</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Cumulative Sum (S<sub>n</sub>)</b></td>
+              <td>Total breakthrough count; variance scales linearly as n&sigma;&sup2;, spreading individual trajectories wider as n grows.</td>
+              <td>Sections 1, 2</td>
+            </tr>
+            <tr>
+              <td><b>Empirical Average (S<sub>n</sub>/n)</b></td>
+              <td>Average score per target; variance decays as &sigma;&sup2;/n, strictly converging to theoretical expectation &mu; (WLLN).</td>
+              <td>Sections 1, 5</td>
+            </tr>
+            <tr>
+              <td><b>Normalized Score (S<sub>n</sub>/&radic;n)</b></td>
+              <td>Unique scaling that stabilizes variance at constant &sigma;&sup2;; standardized sum converges to Gaussian N(0, 1) by CLT.</td>
+              <td>Sections 1, 4, 7</td>
+            </tr>
+            <tr>
+              <td><b>Weak Law of Large Numbers</b></td>
+              <td>The probability of deviation |S<sub>n</sub>/n &minus; &mu;| &gt; &epsilon; vanishes as n &rarr; &infin;, rigorously bounded by Chebyshev &sigma;&sup2;/(n&epsilon;&sup2;).</td>
+              <td>Section 5</td>
+            </tr>
+            <tr>
+              <td><b>Log-Log Power Laws</b></td>
+              <td>Slopes on log-log plots reveal scaling exponents: +1 for total variance, &minus;1 for average variance, 0 for normalized variance.</td>
+              <td>Section 6</td>
+            </tr>
+            <tr>
+              <td><b>Defensive Security Implication</b></td>
+              <td>Defensive depth (increasing n) forces deterministic average breach rates; defending against large attacker volume requires hardening p.</td>
+              <td>Section 8</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 
   <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
@@ -670,7 +741,10 @@
           title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
         <a href="homework3.html" class="google-page-link active"
           title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+        <a href="homework4.html" class="google-page-link"
+          title="Homework 4: Welford's Recurrences and Sampling Mean and Variance">4</a>
       </div>
+      <a href="homework4.html" class="google-page-arrow" title="Next: Homework 4">Next &rarr;</a>
     </div>
     <div class="google-home-link">
       <a href="index.html">&larr; Return to Portfolio Overview</a>
