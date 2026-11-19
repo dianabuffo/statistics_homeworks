@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Homework 6 – Statistical Independence: Contingency Tables and the Chi-square Test | Diana Buffo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/homework3.css">
+    <link rel="stylesheet" href="css/homework6.css">
+</head>
+
+<body>
+
+    <!-- NAVBAR CENTRATA -->
+    <nav class="navbar">
+        <a href="index.html" class="brand-centered" title="Back to Home">
+            <span class="brand-title">Statistics</span>
+            <span class="brand-subtitle">Diana Buffo</span>
+        </a>
+    </nav>
+
+    <!-- HEADER -->
+    <header>
+        <div>
+            <div class="hw-tag">Homework 6</div>
+            <h1>Statistical Independence: Contingency Tables and the Chi-square Test</h1>
+            <p>From a list of paired observations to a contingency table, from marginal and conditional frequencies to
+                the frequencies expected under independence, and from the chi-square statistic to a decision: are the
+                two variables independent or associated, and what does that (not) tell us about causes?</p>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- 3 STEP PREVIEW CARDS -->
+        <div class="steps">
+            <div class="card"><b>1. Build and describe the table</b><br>From raw pairs (X, F) to the contingency table,
+                with marginal, conditional and joint frequencies computed by code.</div>
+            <div class="card"><b>2. Test independence</b><br>Expected frequencies under independence, chi-square
+                statistic, degrees of freedom, p-value, critical value and effect size.</div>
+            <div class="card"><b>3. Interpret with care</b><br>Independence in probability versus in statistics, what a
+                small p-value does and does not say, association versus causality (Simpson's paradox).</div>
+        </div>
+
+        <!-- OVERVIEW -->
+        <div class="card">
+            <h3 style="margin-top:0;">What are we doing and what is the objective?</h3>
+            <p>
+                <b>The assignment.</b> Given a bivariate dataset (X, F) we must (1) programmatically construct the
+                contingency table and compute marginal and conditional frequencies; (2) compute the frequencies expected
+                under independence and the chi-square statistic (optionally the p-value); (3) recall the theory of
+                independence in probability and in statistics, interpret the results, and briefly discuss why
+                statistical association is not causality.
+            </p>
+            <p style="margin-bottom:0;">
+                <b>The objective:</b> to understand that "independent" is a precise mathematical property (the joint
+                distribution is the product of the marginals) that a finite sample can never satisfy exactly; that the
+                chi-square test measures how far the observed table is from the table that independence would produce,
+                compared with what random sampling alone could do; and that the answer concerns <i>association</i>,
+                never directly <i>cause and effect</i>.
+            </p>
+        </div>
+
+        <!-- STUDY GUIDE: START HERE -->
+        <details class="study" open>
+            <summary>Study guide: start here (the vocabulary, from zero)</summary>
+            <div class="study-body">
+
+                <h4>The data</h4>
+                <ul>
+                    <li><b>Bivariate dataset (X, F):</b> N observations, each one made of a pair (x<sub>k</sub>,
+                        f<sub>k</sub>): two things measured on the same individual (for instance the passenger class and
+                        whether the person survived).</li>
+                    <li><b>Categorical variable:</b> a variable whose values are labels (class 1/2/3, yes/no). A numeric
+                        variable with many values can be turned into categories by grouping (binning).</li>
+                    <li><b>Contingency table:</b> a table of counts n<sub>ij</sub> = how many observations have X = i-th
+                        category and F = j-th category. Rows are the categories of X, columns those of F.</li>
+                </ul>
+                <h4>The frequencies</h4>
+                <ul>
+                    <li><b>Joint frequency</b> n<sub>ij</sub>/N: the share of all observations in cell (i, j).</li>
+                    <li><b>Marginal frequencies</b> (the "margins" of the table): row totals n<sub>i&middot;</sub> and
+                        column totals n<sub>&middot;j</sub>, divided by N: the distribution of X alone and of F alone.
+                    </li>
+                    <li><b>Conditional frequency</b> n<sub>ij</sub>/n<sub>i&middot;</sub>: among the individuals with X
+                        = i, the share with F = j. It answers "within this group, how are the F values distributed?".
+                    </li>
+                </ul>
+                <h4>The test</h4>
+                <ul>
+                    <li><b>Independence:</b> knowing the value of one variable tells you nothing about the other. In a
+                        table: all the rows have the same conditional distribution.</li>
+                    <li><b>Expected frequency</b> E<sub>ij</sub>: the count that cell (i, j) would have if independence
+                        held exactly.</li>
+                    <li><b>Chi-square statistic &chi;&sup2;:</b> one number that measures the total gap between observed
+                        and expected counts.</li>
+                    <li><b>Null hypothesis H<sub>0</sub>:</b> "X and F are independent in the population".
+                        <b>p-value:</b> the probability, <i>if H<sub>0</sub> were true</i>, of getting a table at least
+                        as far from independence as the observed one. <b>Significance level &alpha;:</b> the threshold
+                        (usually 0.05) below which we say "too unlikely, we reject H<sub>0</sub>".</li>
+                    <li><b>Degrees of freedom (df):</b> the number of cells that are free to vary once the margins are
+                        fixed: (r &minus; 1)(c &minus; 1).</li>
+                    <li><b>Cram&eacute;r's V:</b> a number between 0 and 1 telling how <i>strong</i> the association is
+                        (the p-value tells how <i>surprising</i> it is: a different thing).</li>
+                    <li><b>Confounder:</b> a third variable that influences both X and F and creates (or hides) an
+                        association between them.</li>
+                </ul>
+                <div class="try"><b>How to study this page.</b> Start with the Titanic data (the default). Follow the
+                    numbers from the raw pairs down to the decision, then change the dataset to a synthetic one that is
+                    independent by construction and see what a "no association" result looks like. Finally read Section
+                    9 on causality.</div>
+            </div>
+        </details>
+
+        <!-- ===================== SECTION 1: THEORY ===================== -->
+        <h2><span class="n">1</span> Independence: probability versus statistics</h2>
+        <div class="card">
+            <h3 style="margin-top:0;">In probability (a property of a model)</h3>
+            <div class="dstep"><span class="t">Two events</span>
+                <p>A and B are independent when</p>
+                <span class="formula">P(A &cap; B) = P(A) &middot; P(B) equivalently (if P(B) &gt; 0): P(A | B) =
+                    P(A)</span>
+                <p style="margin-bottom:0;">Learning that B happened does not change the probability of A.</p>
+            </div>
+            <div class="dstep"><span class="t">Two discrete random variables X and F</span>
+                <p>They are independent when the joint probability is the product of the marginal probabilities, for
+                    every pair of values:</p>
+                <span class="formula">P(X = x, F = y) = P(X = x) &middot; P(F = y) for all x, y equivalently P(F = y | X
+                    = x) = P(F = y) for every x</span>
+                <p style="margin-bottom:0;">For continuous variables the joint density factorizes, f(x, y) =
+                    f<sub>X</sub>(x) f<sub>F</sub>(y), and so does the joint CDF.</p>
+            </div>
+            <p><b>Consequences and warnings.</b></p>
+            <ul>
+                <li>Independence implies zero covariance (E[XF] = E[X]E[F]), <b>but not conversely</b>: if X is uniform
+                    on {&minus;1, 0, 1} and F = X&sup2;, then Cov(X, F) = 0 yet F is completely determined by X.</li>
+                <li>Independent is <b>not</b> the same as mutually exclusive: if A and B cannot occur together (P(A
+                    &cap; B) = 0) and both have positive probability, then P(A &cap; B) &ne; P(A)P(B), so they are
+                    strongly <i>dependent</i>.</li>
+            </ul>
+
+            <h3>In statistics (a property of data, and an hypothesis about a population)</h3>
+            <p>With N observations we have <b>relative frequencies</b> instead of probabilities: the joint frequency
+                f<sub>ij</sub> = n<sub>ij</sub>/N and the marginals f<sub>i&middot;</sub> = n<sub>i&middot;</sub>/N,
+                f<sub>&middot;j</sub> = n<sub>&middot;j</sub>/N. The data are <b>empirically independent</b> when</p>
+            <span class="formula">f<sub>ij</sub> = f<sub>i&middot;</sub> &middot; f<sub>&middot;j</sub> for all i, j
+                &hArr; n<sub>ij</sub> = n<sub>i&middot;</sub>&middot;n<sub>&middot;j</sub>/N = E<sub>ij</sub> &hArr; all
+                rows have the same conditional distribution</span>
+            <p>In a real sample this never holds exactly, even when the variables are truly independent in the
+                population, because of <b>sampling variability</b> (the same reason why 10 coin tosses are rarely 5
+                heads and 5 tails). So we do not ask "is the table exactly independent?" but "is the observed gap from
+                independence larger than what chance alone would normally produce?". That is a hypothesis test:</p>
+            <div class="callout-academic" style="margin-bottom:0;">
+                <b>H<sub>0</sub>:</b> X and F are independent in the population. <b>H<sub>1</sub>:</b> they are not
+                (dependent / associated).<br>
+                Pearson's statistic: &chi;&sup2; = &sum;<sub>i,j</sub> (O<sub>ij</sub> &minus; E<sub>ij</sub>)&sup2; /
+                E<sub>ij</sub>, which under H<sub>0</sub> follows approximately a chi-square distribution with (r
+                &minus; 1)(c &minus; 1) degrees of freedom.
+            </div>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 2: DATA LAB ===================== -->
+        <h2><span class="n">2</span> The data and the contingency table</h2>
+        <div class="card">
+            <div class="row">
+                <label>Dataset:
+                    <select id="dataSel">
+                        <option value="titanic" selected>Titanic: class vs survival (real, N = 2,201)</option>
+                        <option value="kidney">Kidney stones: treatment vs outcome (real, N = 700)</option>
+                        <option value="indep">Synthetic: operating system vs compromise (independent by construction)
+                        </option>
+                        <option value="weak">Synthetic: operating system vs compromise (weak dependence)</option>
+                        <option value="dep">Synthetic: patching policy vs compromise (strong dependence)</option>
+                        <option value="custom">Your own data (paste pairs X, F)</option>
+                    </select>
+                </label>
+                <label>Significance level &alpha;:
+                    <select id="alphaSel">
+                        <option value="0.10">0.10</option>
+                        <option value="0.05" selected>0.05</option>
+                        <option value="0.01">0.01</option>
+                    </select>
+                </label>
+            </div>
+            <div class="row" id="synthRow" style="display:none;">
+                <label>Sample size N: <b id="nDisp">400</b>
+                    <input id="nSlider" type="range" min="50" max="5000" step="50" value="400" style="width:180px;">
+                </label>
+                <button class="sec" id="btnRegen">Draw a new random sample</button>
+            </div>
+            <div id="customBox" style="display:none;">
+                <p class="mut" style="margin:6px 0;">One observation per line, two values separated by a comma,
+                    semicolon or tab. Numeric variables with more than 12 distinct values are automatically grouped into
+                    4 quartile classes.</p>
+                <textarea id="customText" rows="8"
+                    style="border-radius:14px; font-family:var(--font-mono); font-size:0.85rem;"></textarea>
+                <div class="row">
+                    <label><input id="hasHeader" type="checkbox" checked> first line is a header (variable
+                        names)</label>
+                    <button id="btnAnalyze">Build the table and analyze</button>
+                </div>
+            </div>
+
+            <div id="rawOut"></div>
+            <h3>Contingency table (observed counts O<sub>ij</sub>)</h3>
+            <div id="countsOut"></div>
+            <p class="mut" style="margin:6px 0 0;">
+                <b>What it means:</b> each row is a category of X, each column a category of F. The cell (i, j) counts
+                the observations that have both. The last column and the last row (in bold) are the <b>marginal
+                    totals</b> n<sub>i&middot;</sub> and n<sub>&middot;j</sub>, and the bottom-right number is the total
+                N. The table is built from the raw pairs by the code of this page (see the Python version at the end).
+            </p>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 3: FREQUENCIES ===================== -->
+        <h2><span class="n">3</span> Marginal, conditional and joint frequencies</h2>
+        <div class="card">
+            <div class="row">
+                <label>View:
+                    <select id="freqView">
+                        <option value="rows" selected>conditional: F given X (each row sums to 100%)</option>
+                        <option value="cols">conditional: X given F (each column sums to 100%)</option>
+                        <option value="joint">joint: n<sub>ij</sub>/N (all cells sum to 100%)</option>
+                    </select>
+                </label>
+            </div>
+            <div id="freqOut"></div>
+            <p class="mut" style="margin:6px 0 0;" id="freqNote"></p>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 4: EXPECTED ===================== -->
+        <h2><span class="n">4</span> Expected frequencies under independence</h2>
+        <div class="card">
+            <div class="dstep"><span class="t">The formula</span>
+                <p>If X and F were independent, the share of observations in cell (i, j) would be the product of the
+                    shares of its row and its column, and the expected count is that share times N:</p>
+                <span class="formula">E<sub>ij</sub> = N &middot; f<sub>i&middot;</sub> &middot; f<sub>&middot;j</sub> =
+                    N &middot; (n<sub>i&middot;</sub>/N) &middot; (n<sub>&middot;j</sub>/N) = n<sub>i&middot;</sub>
+                    &middot; n<sub>&middot;j</sub> / N</span>
+                <p style="margin-bottom:0;">The expected table has exactly the same margins as the observed one, but all
+                    its rows are proportional to each other: it is the closest "perfectly independent" table that shares
+                    the observed margins.</p>
+            </div>
+            <h3>Expected counts E<sub>ij</sub></h3>
+            <div id="expOut"></div>
+            <h3>Contribution of each cell to &chi;&sup2;: (O &minus; E)&sup2; / E</h3>
+            <div id="contribOut"></div>
+            <h3>Standardized residuals (O &minus; E)/&radic;E</h3>
+            <div id="residOut"></div>
+            <p class="mut" style="margin:6px 0 0;">
+                <b>What it means:</b> amber cells have an expected count below 5 (the chi-square approximation becomes
+                unreliable). In the residual table, blue = more observations than expected under independence, red =
+                fewer; values beyond &plusmn;2 (in bold) mark the cells where the departure from independence is
+                concentrated.
+            </p>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 5: CHI-SQUARE ===================== -->
+        <h2><span class="n">5</span> The chi-square statistic, the p-value and the decision</h2>
+        <div class="card">
+            <div id="chiOut"></div>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 6: VISUALS ===================== -->
+        <h2><span class="n">6</span> Seeing independence: conditional bars and the mosaic plot</h2>
+        <div class="card">
+            <div class="canvas-grid-2">
+                <div>
+                    <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Distribution of F inside each
+                        category of X</h3>
+                    <canvas id="canvasCond" style="height:300px;"></canvas>
+                </div>
+                <div>
+                    <h3 style="margin:0 0 6px; font-size:0.98rem; text-align:center;">Mosaic plot, shaded by residual
+                    </h3>
+                    <canvas id="canvasMosaic" style="height:300px;"></canvas>
+                </div>
+            </div>
+            <p class="mut" style="margin:6px 0 0;">
+                <b>What it means:</b> left, every bar is a category of X and its colored slices are the conditional
+                distribution of F (they sum to 100%); the bar "All" is the marginal distribution of F. <b>If X and F
+                    were independent, every bar would look like the bar "All".</b> Right, the width of each column is
+                proportional to the size of the X category, the height of each tile to the conditional share of F, so
+                the area of a tile is proportional to the count. Blue tiles have more observations than expected under
+                independence, red tiles fewer (darker = larger residual). Under independence all the lines separating
+                the tiles would line up horizontally across the columns.
+            </p>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 7: NULL DISTRIBUTION ===================== -->
+        <h2><span class="n">7</span> What chance alone would do: the null distribution</h2>
+        <div class="card">
+            <h3 style="margin-top:0;">The theoretical chi-square distribution and the observed statistic</h3>
+            <div class="canvas-container" style="margin-top:0;">
+                <canvas id="canvasChi" style="height:240px;"></canvas>
+            </div>
+            <p class="mut" style="margin:6px 0 14px;">
+                <b>What it means:</b> the curve is the density of the chi-square distribution with the degrees of
+                freedom of your table (what &chi;&sup2; would do under H<sub>0</sub>). The dashed line is the critical
+                value for the chosen &alpha;; the solid line is the observed &chi;&sup2;; the rose area to the right of
+                the observed value is the <b>p-value</b>. If the observed value is far to the right the p-value is
+                minuscule.
+            </p>
+
+            <h3>Checking it empirically: permutation test</h3>
+            <div class="row">
+                <button id="btnPerm">Run permutation test (2,000 shuffles)</button>
+                <span class="mut">Shuffles the F labels, which destroys any link with X, and recomputes &chi;&sup2; each
+                    time.</span>
+            </div>
+            <div class="canvas-container" style="margin-top:0;">
+                <canvas id="canvasPerm" style="height:240px;"></canvas>
+            </div>
+            <div class="live-readout" id="permReadout">Press the button to run the permutation test.</div>
+
+            <h3>The false-positive rate: independent data rejected by chance</h3>
+            <div class="row">
+                <button id="btnSim">Simulate 1,000 datasets that ARE independent</button>
+                <span class="mut">Same margins and same N as your data, but X and F drawn independently.</span>
+            </div>
+            <div class="canvas-container" style="margin-top:0;">
+                <canvas id="canvasP" style="height:240px;"></canvas>
+            </div>
+            <div class="live-readout" id="simReadout">Press the button to run the simulation.</div>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 8: SAMPLE SIZE ===================== -->
+        <h2><span class="n">8</span> Statistical significance versus strength of association</h2>
+        <div class="card">
+            <div class="row">
+                <label>What if we had k times more data with exactly the same proportions? k = <b id="scaleKDisp">1</b>
+                    <input id="scaleK" type="range" min="1" max="60" value="1" style="width:200px;">
+                </label>
+            </div>
+            <div class="canvas-container" style="margin-top:0;">
+                <canvas id="canvasScale" style="height:260px;"></canvas>
+            </div>
+            <div class="live-readout" id="scaleReadout">Computing...</div>
+            <p class="mut" style="margin:6px 0 0;">
+                <b>What it means:</b> every count of the table is multiplied by k, so all proportions (conditional
+                frequencies) stay exactly the same: the association is, by construction, equally strong. Horizontal
+                axis: the resulting sample size; vertical axis (logarithmic): the p-value. The dashed line is &alpha;.
+                The p-value falls steadily as N grows, while Cram&eacute;r's V does not move.
+            </p>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 9: CAUSALITY ===================== -->
+        <h2><span class="n">9</span> Association is not causation: confounders and Simpson's paradox</h2>
+        <div class="card">
+            <p style="margin-top:0;">The chi-square test, like any measure of association, answers only <b>"are X and F
+                    statistically linked?"</b>. It does not say <i>why</i>. Here is a famous real example: two
+                treatments for kidney stones (A and B) and their success rates, aggregated and by stone size (Charig et
+                al., 1986).</p>
+            <div id="simpsonOut"></div>
+            <p class="mut" style="margin:8px 0 0;">
+                <b>What it means:</b> inside <i>each</i> stone size, treatment A has the higher success rate. In the
+                <i>aggregated</i> data, treatment B looks better. The reversal happens because the treatment was not
+                assigned at random: A was mostly used on large stones (263 of its 350 cases), which are harder to treat,
+                and B mostly on small ones. Stone size is a <b>confounder</b>: it influences both which treatment is
+                chosen and the outcome.
+            </p>
+        </div>
+
+        
+
+        <!-- ===================== SECTION 10: CONCLUSIONS ===================== -->
+        <h2><span class="n">10</span> Conclusions</h2>
+        <div class="card">
+            <div class="live-conclusion" id="liveConc">Computing the summary of the current dataset...</div>
+
+            <h3>1. Statistical independence</h3>
+            <p>Two variables are independent when the joint distribution is the product of the marginals, equivalently
+                when all conditional distributions coincide with the marginal one. In a sample, this corresponds to
+                observed counts equal to n<sub>i&middot;</sub>n<sub>&middot;j</sub>/N. Because of sampling variability
+                this never holds exactly, so we use the &chi;&sup2; test: if the statistic is large compared with a
+                &chi;&sup2; distribution with (r &minus; 1)(c &minus; 1) degrees of freedom (small p-value), we reject
+                independence; otherwise we do not.</p>
+            <h3>2. Interpretation of the result</h3>
+            <p>A small p-value is evidence of a statistical association; the residuals say <i>where</i> it lives and
+                Cram&eacute;r's V says <i>how strong</i> it is. A large p-value means that the data are compatible with
+                independence, not that independence is proven. Both depend on N, so the sample size must always be
+                reported.</p>
+            <h3>3. Association versus causality</h3>
+            <p style="margin-bottom:0;">An association can arise from a causal link in either direction, from a
+                confounding variable (Simpson's paradox shows how it can even reverse the sign of the effect) or from
+                chance. The test cannot tell these apart. Causal conclusions require experimental design (randomization)
+                or a causal model, not only a contingency table.</p>
+        </div>
+
+        
+
+        <!-- SUMMARY -->
+        <h2>Summary</h2>
+        <div class="card">
+            <div class="wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concept</th>
+                            <th>One-sentence version</th>
+                            <th>Where to see it</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><b>Independence (probability)</b></td>
+                            <td>P(X = x, F = y) = P(X = x)P(F = y) for all x, y; equivalently all conditional
+                                distributions of F coincide.</td>
+                            <td>Section 1</td>
+                        </tr>
+                        <tr>
+                            <td><b>Independence (data)</b></td>
+                            <td>n<sub>ij</sub> = n<sub>i&middot;</sub>n<sub>&middot;j</sub>/N for all cells; never exact
+                                in a sample, hence a test.</td>
+                            <td>Sections 1, 4</td>
+                        </tr>
+                        <tr>
+                            <td><b>Contingency table</b></td>
+                            <td>Counts of the observations for every pair of categories, with row and column totals.
+                            </td>
+                            <td>Section 2</td>
+                        </tr>
+                        <tr>
+                            <td><b>Frequencies</b></td>
+                            <td>Marginal (one variable), joint (both), conditional (one given the other); the joint is
+                                the conditional times the marginal.</td>
+                            <td>Section 3</td>
+                        </tr>
+                        <tr>
+                            <td><b>Expected counts</b></td>
+                            <td>E<sub>ij</sub> = n<sub>i&middot;</sub>n<sub>&middot;j</sub>/N: the table that
+                                independence would produce with the same margins.</td>
+                            <td>Section 4</td>
+                        </tr>
+                        <tr>
+                            <td><b>Chi-square</b></td>
+                            <td>&chi;&sup2; = &sum;(O &minus; E)&sup2;/E with (r &minus; 1)(c &minus; 1) degrees of
+                                freedom; large values contradict independence.</td>
+                            <td>Section 5</td>
+                        </tr>
+                        <tr>
+                            <td><b>p-value</b></td>
+                            <td>The probability, if independence were true, of a statistic at least as large as the
+                                observed one. It is not the probability that H<sub>0</sub> is true.</td>
+                            <td>Sections 5, 7</td>
+                        </tr>
+                        <tr>
+                            <td><b>Strength</b></td>
+                            <td>Cram&eacute;r's V does not depend on N; the p-value does (&chi;&sup2; grows linearly
+                                with N).</td>
+                            <td>Sections 5, 8</td>
+                        </tr>
+                        <tr>
+                            <td><b>Association vs causality</b></td>
+                            <td>The test detects dependence, not cause: confounders can create or even reverse an
+                                association (Simpson).</td>
+                            <td>Section 9</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER: GOOGLE-STYLE PAGINATION -->
+    <footer class="google-nav-wrap">
+        <div class="google-nav-title">Which homework would you like to explore?</div>
+        <div class="google-pagination">
+            <a href="homework5.html" class="google-page-arrow" title="Previous: Homework 5">&larr; Previous</a>
+            <div class="google-page-numbers">
+                <a href="homework1-pt1.html" class="google-page-link"
+                    title="Homework 1 pt.1: From Private Key to Public Key">1.1</a>
+                <a href="homework1-pt2.html" class="google-page-link"
+                    title="Homework 1 pt.2: From Wallet Seed to Ethereum Address">1.2</a>
+                <a href="homework2.html" class="google-page-link"
+                    title="Homework 2: Toy ECC, Caesar Cipher and Cryptanalysis">2</a>
+                <a href="homework3.html" class="google-page-link"
+                    title="Homework 3: Stochastic Penetration Processes, LLN and CLT">3</a>
+                <a href="homework4.html" class="google-page-link"
+                    title="Homework 4: Welford's Recurrences and Sampling Mean and Variance">4</a>
+                <a href="homework5.html" class="google-page-link"
+                    title="Homework 5: Riemann vs Lebesgue Integration and the Normal CDF">5</a>
+                <a href="homework6.html" class="google-page-link active"
+                    title="Homework 6: Statistical Independence and the Chi-square Test">6</a>
+            </div>
+        </div>
+        <div class="google-home-link">
+            <a href="index.html">&larr; Return to Portfolio Overview</a>
+        </div>
+    </footer>
+
+    <script>
+        /* ================= helpers ================= */
+        const $ = id => document.getElementById(id);
+        const getCssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        const PALETTE = ['#3d5afe', '#f97316', '#10b981', '#f43f5e', '#9333ea', '#06b6d4'];
+        const fmtP = p => p === 0 ? '0' : (p < 1e-4 ? p.toExponential(2) : p.toFixed(4));
+        const pct = v => (100 * v).toFixed(1) + '%';
+        const fmtN = v => v.toLocaleString('en-US');
+
+        function setupCanvas(id) {
+            const canvas = $(id);
+            if (!canvas) return null;
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            const w = rect.width || canvas.clientWidth || 300;
+            const h = rect.height || canvas.clientHeight || 240;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+            ctx.font = '12px ' + getCssVar('--font-family');
+            return { ctx, w, h };
+        }
+        const fmtAxis = (v, eps) => {
+            if (Math.abs(v) <= eps) return '0';
+            const a = Math.abs(v);
+            if (a >= 10000 || a < 0.01) return v.toExponential(1);
+            if (a >= 100) return v.toFixed(0);
+            if (a >= 10) return v.toFixed(1);
+            return v.toFixed(2);
+        };
+        function drawLegend(ctx, items, x, y) {
+            ctx.font = '11px ' + getCssVar('--font-family');
+            let maxW = 0; items.forEach(it => { maxW = Math.max(maxW, ctx.measureText(it.label).width); });
+            const bw = maxW + 34, bh = items.length * 15 + 8;
+            ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(x, y, bw, bh);
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 1; ctx.setLineDash([]); ctx.strokeRect(x, y, bw, bh);
+            items.forEach((it, j) => {
+                const yy = y + 12 + j * 15;
+                ctx.strokeStyle = it.color; ctx.lineWidth = 2.2; ctx.setLineDash(it.dash ? [5, 3] : []);
+                ctx.beginPath(); ctx.moveTo(x + 6, yy - 3); ctx.lineTo(x + 24, yy - 3); ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = getCssVar('--fg'); ctx.textAlign = 'left'; ctx.fillText(it.label, x + 29, yy);
+            });
+        }
+
+        /* ================= statistics: chi-square distribution ================= */
+        function lnGamma(x) {
+            const g = 7, c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+            if (x < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * x)) - lnGamma(1 - x);
+            x -= 1; let a = c[0]; const t = x + g + 0.5;
+            for (let i = 1; i < g + 2; i++) a += c[i] / (x + i);
+            return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+        }
+        function gammaPseries(a, x) {
+            let ap = a, sum = 1 / a, del = sum;
+            for (let n = 0; n < 2000; n++) { ap++; del *= x / ap; sum += del; if (Math.abs(del) < Math.abs(sum) * 1e-16) break; }
+            return sum * Math.exp(-x + a * Math.log(x) - lnGamma(a));
+        }
+        function gammaQcf(a, x) {
+            const T = 1e-300; let b = x + 1 - a, c = 1 / T, d = 1 / b, h = d;
+            for (let i = 1; i < 2000; i++) {
+                const an = -i * (i - a); b += 2; d = an * d + b; if (Math.abs(d) < T) d = T;
+                c = b + an / c; if (Math.abs(c) < T) c = T; d = 1 / d;
+                const del = d * c; h *= del; if (Math.abs(del - 1) < 1e-16) break;
+            }
+            return Math.exp(-x + a * Math.log(x) - lnGamma(a)) * h;
+        }
+        const gammaQ = (a, x) => x <= 0 ? 1 : (x < a + 1 ? 1 - gammaPseries(a, x) : gammaQcf(a, x));
+        const chi2sf = (x, k) => gammaQ(k / 2, x / 2);                     // P(chi2_k >= x)
+        function chi2crit(alpha, k) { let lo = 0, hi = 5000; for (let i = 0; i < 200; i++) { const m = (lo + hi) / 2; if (chi2sf(m, k) > alpha) lo = m; else hi = m; } return (lo + hi) / 2; }
+        const chi2pdf = (x, k) => x <= 0 ? 0 : Math.exp((k / 2 - 1) * Math.log(x) - x / 2 - (k / 2) * Math.LN2 - lnGamma(k / 2));
+        function quantile(arr, q) { const s = Array.from(arr).sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(q * s.length))]; }
+
+        /* generic chi-square test on a table of counts */
+        function analyzeCounts(O) {
+            const r = O.length, c = O[0].length;
+            const rt = O.map(row => row.reduce((a, b) => a + b, 0));
+            const ct = Array.from({ length: c }, (_, j) => O.reduce((a, row) => a + row[j], 0));
+            const N = rt.reduce((a, b) => a + b, 0);
+            let chi = 0;
+            O.forEach((row, i) => row.forEach((o, j) => { const e = rt[i] * ct[j] / N; if (e > 0) chi += (o - e) * (o - e) / e; }));
+            const df = (r - 1) * (c - 1);
+            return { chi, df, p: chi2sf(chi, df), N, V: Math.sqrt(chi / (N * Math.min(r - 1, c - 1))) };
+        }
+
+        /* ================= data sources ================= */
+        const TITANIC = {
+            xName: 'Class', fName: 'Survived', rows: ['1st', '2nd', '3rd', 'Crew'], cols: ['No', 'Yes'],
+            O: [[122, 203], [167, 118], [528, 178], [673, 212]],
+            desc: 'Titanic: 2,201 people on board (passengers by class, and crew) and whether they survived.'
+        };
+        const KIDNEY = {
+            xName: 'Treatment', fName: 'Outcome', rows: ['A', 'B'], cols: ['Success', 'Failure'],
+            O: [[273, 77], [289, 61]],
+            desc: 'Kidney stones (Charig et al., 1986): treatments A and B, aggregated over stone sizes.'
+        };
+
+        function shuffleInPlace(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } }
+
+        function makeBuilt(xName, fName, rows, cols, xi, fi, desc, notes) {
+            const r = rows.length, c = cols.length;
+            const O = Array.from({ length: r }, () => Array(c).fill(0));
+            for (let k = 0; k < xi.length; k++) O[xi[k]][fi[k]]++;
+            const rt = O.map(row => row.reduce((a, b) => a + b, 0));
+            const ct = Array.from({ length: c }, (_, j) => O.reduce((a, row) => a + row[j], 0));
+            return { ok: true, xName, fName, rows, cols, O, rt, ct, N: xi.length, xi: Int32Array.from(xi), fi: Int32Array.from(fi), desc, notes: notes || [] };
+        }
+        function fromCounts(d) {
+            const xi = [], fi = [];
+            d.O.forEach((row, i) => row.forEach((n, j) => { for (let k = 0; k < n; k++) { xi.push(i); fi.push(j); } }));
+            const idx = Array.from({ length: xi.length }, (_, k) => k); shuffleInPlace(idx);
+            return makeBuilt(d.xName, d.fName, d.rows, d.cols, idx.map(k => xi[k]), idx.map(k => fi[k]), d.desc);
+        }
+        function drawCat(cdf) { const r = Math.random(); for (let k = 0; k < cdf.length; k++) if (r < cdf[k]) return k; return cdf.length - 1; }
+        function synth(kind, N) {
+            let xName, fName, rows, probs, pYes, desc;
+            if (kind === 'dep') {
+                xName = 'Patching policy'; rows = ['Weekly', 'Monthly', 'Never']; probs = [0.3, 0.4, 0.3]; pYes = [0.08, 0.18, 0.35];
+                desc = 'Synthetic: compromise probability 8%, 18%, 35% according to the patching policy (strong dependence).';
+            } else {
+                xName = 'Operating system'; rows = ['Windows', 'Linux', 'macOS']; probs = [0.5, 0.3, 0.2];
+                pYes = kind === 'weak' ? [0.20, 0.24, 0.28] : [0.25, 0.25, 0.25];
+                desc = kind === 'weak' ? 'Synthetic: compromise probability 20%, 24%, 28% according to the operating system (weak dependence).' : 'Synthetic: compromise probability 25% for every operating system (independent by construction).';
+            }
+            fName = 'Compromised'; const cols = ['No', 'Yes'];
+            const cdf = []; let acc = 0; probs.forEach(p => { acc += p; cdf.push(acc); });
+            const xi = [], fi = [];
+            for (let k = 0; k < N; k++) { const i = drawCat(cdf); xi.push(i); fi.push(Math.random() < pYes[i] ? 1 : 0); }
+            return makeBuilt(xName, fName, rows, cols, xi, fi, desc);
+        }
+
+        /* custom data: parsing, optional binning */
+        const isNum = s => s !== '' && isFinite(Number(s));
+        function uniqueSorted(vals) {
+            const u = Array.from(new Set(vals));
+            return u.every(isNum) ? u.sort((a, b) => Number(a) - Number(b)) : u.sort((a, b) => a.localeCompare(b));
+        }
+        function maybeBin(vals, label) {
+            if (vals.every(isNum)) {
+                const distinct = new Set(vals).size;
+                if (distinct > 12) {
+                    const nums = vals.map(Number), s = nums.slice().sort((a, b) => a - b), n = s.length;
+                    const cuts = [s[Math.floor(n / 4)], s[Math.floor(n / 2)], s[Math.floor(3 * n / 4)]];
+                    const lab = ['Q1 (\u2264' + cuts[0] + ')', 'Q2 (\u2264' + cuts[1] + ')', 'Q3 (\u2264' + cuts[2] + ')', 'Q4 (>' + cuts[2] + ')'];
+                    return { vals: nums.map(v => v <= cuts[0] ? lab[0] : v <= cuts[1] ? lab[1] : v <= cuts[2] ? lab[2] : lab[3]), note: `${label} had ${distinct} distinct numeric values: grouped into 4 quartile classes.` };
+                }
+            }
+            return { vals, note: null };
+        }
+        function parseCustom() {
+            const lines = $('customText').value.split(/\r?\n/).map(s => s.trim()).filter(s => s.length);
+            let start = 0, xName = 'X', fName = 'F';
+            if ($('hasHeader').checked && lines.length) {
+                const hd = lines[0].split(/[,;\t]/).map(s => s.trim()); xName = hd[0] || 'X'; fName = hd[1] || 'F'; start = 1;
+            }
+            const xv = [], fv = [];
+            for (let i = start; i < lines.length; i++) {
+                const p = lines[i].split(/[,;\t]/).map(s => s.trim());
+                if (p.length < 2 || p[0] === '' || p[1] === '') continue;
+                xv.push(p[0]); fv.push(p[1]);
+            }
+            if (xv.length < 5) return { ok: false, msg: 'Need at least 5 valid lines with two values each.' };
+            const bx = maybeBin(xv, xName), bf = maybeBin(fv, fName);
+            const rows = uniqueSorted(bx.vals), cols = uniqueSorted(bf.vals);
+            if (rows.length < 2 || cols.length < 2) return { ok: false, msg: 'Each variable needs at least 2 different categories.' };
+            if (rows.length * cols.length > 150) return { ok: false, msg: 'Too many categories (more than 150 cells): group the variables first.' };
+            const ri = new Map(rows.map((v, i) => [v, i])), ci = new Map(cols.map((v, i) => [v, i]));
+            const xi = bx.vals.map(v => ri.get(v)), fi = bf.vals.map(v => ci.get(v));
+            return makeBuilt(xName, fName, rows, cols, xi, fi, 'Your own data.', [bx.note, bf.note].filter(Boolean));
+        }
+        function defaultCustomText() {
+            let s = 123456789; const rnd = () => { s = (1103515245 * s + 12345) % 2147483648; return s / 2147483648; };
+            const roles = ['Admin', 'Developer', 'Sales', 'HR'], rp = [0.15, 0.35, 0.3, 0.2], pc = [0.10, 0.15, 0.40, 0.30];
+            const lines = ['role,clicked_phishing'];
+            for (let k = 0; k < 160; k++) {
+                const r = rnd(); let a = 0, i = 0; for (; i < 3; i++) { a += rp[i]; if (r < a) break; }
+                lines.push(roles[i] + ',' + (rnd() < pc[i] ? 'yes' : 'no'));
+            }
+            return lines.join('\n');
+        }
+
+        /* ================= state and computation ================= */
+        let T = null, R = null;
+
+        function computeResults(t, alpha) {
+            const r = t.rows.length, c = t.cols.length, N = t.N;
+            const E = [], C = [], Z = []; let chi = 0, minE = Infinity, below5 = 0;
+            for (let i = 0; i < r; i++) {
+                E.push([]); C.push([]); Z.push([]);
+                for (let j = 0; j < c; j++) {
+                    const e = t.rt[i] * t.ct[j] / N, o = t.O[i][j];
+                    E[i].push(e); const con = (o - e) * (o - e) / e; C[i].push(con); Z[i].push((o - e) / Math.sqrt(e));
+                    chi += con; if (e < minE) minE = e; if (e < 5) below5++;
+                }
+            }
+            const df = (r - 1) * (c - 1), p = chi2sf(chi, df), crit = chi2crit(alpha, df);
+            const V = Math.sqrt(chi / (N * Math.min(r - 1, c - 1)));
+            let yates = null, pY = null;
+            if (r === 2 && c === 2) { yates = 0; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const d = Math.max(Math.abs(t.O[i][j] - E[i][j]) - 0.5, 0); yates += d * d / E[i][j]; } pY = chi2sf(yates, 1); }
+            return { r, c, N, E, C, Z, chi, df, p, crit, V, minE, below5, cells: r * c, alpha, yates, pY };
+        }
+
+        function loadData() {
+            const src = $('dataSel').value;
+            $('synthRow').style.display = ['indep', 'weak', 'dep'].includes(src) ? 'flex' : 'none';
+            $('customBox').style.display = src === 'custom' ? 'block' : 'none';
+            let built;
+            if (src === 'titanic') built = fromCounts(TITANIC);
+            else if (src === 'kidney') built = fromCounts(KIDNEY);
+            else if (src === 'custom') built = parseCustom();
+            else built = synth(src, +$('nSlider').value);
+            if (!built.ok) { $('rawOut').innerHTML = `<p class="bad-num"><b>${built.msg}</b></p>`; return; }
+            T = built; R = computeResults(T, +$('alphaSel').value);
+            permStats = null; simP = null;
+            renderAll();
+        }
+
+        /* ================= rendering: tables ================= */
+        function tableHTML(corner, rowLabels, colLabels, cell, o) {
+            o = o || {};
+            let h = `<div class="wrap"><table><thead><tr><th>${corner}</th>` + colLabels.map(c => `<th>${c}</th>`).join('') + (o.rowTotal ? '<th>Total</th>' : '') + '</tr></thead><tbody>';
+            rowLabels.forEach((rl, i) => {
+                h += `<tr><td><b>${rl}</b></td>` + colLabels.map((c, j) => { const r = cell(i, j); return `<td class="num"${r.style ? ` style="${r.style}"` : ''}>${r.text}</td>`; }).join('') + (o.rowTotal ? `<td class="num"><b>${o.rowTotal(i)}</b></td>` : '') + '</tr>';
+            });
+            if (o.footer) h += `<tr><td><b>${o.footer.label}</b></td>` + colLabels.map((c, j) => `<td class="num"><b>${o.footer.cell(j)}</b></td>`).join('') + (o.rowTotal ? `<td class="num"><b>${o.footer.total}</b></td>` : '') + '</tr>';
+            return h + '</tbody></table></div>';
+        }
+
+        function renderRaw() {
+            const k = Math.min(10, T.N);
+            const rowsH = Array.from({ length: k }, (_, n) => `<tr><td>${n + 1}</td><td>${T.rows[T.xi[n]]}</td><td>${T.cols[T.fi[n]]}</td></tr>`).join('');
+            $('rawOut').innerHTML = `<p style="margin:10px 0 6px;"><b>${T.desc}</b></p>` +
+                (T.notes.length ? `<p class="mut" style="margin:0 0 6px;">${T.notes.join(' ')}</p>` : '') +
+                `<p class="mut" style="margin:0 0 6px;">X = <b>${T.xName}</b> (${T.rows.length} categories), F = <b>${T.fName}</b> (${T.cols.length} categories), N = <b>${fmtN(T.N)}</b> observations. First ${k} raw pairs:</p>` +
+                `<div class="wrap" style="max-width:420px;"><table><thead><tr><th>#</th><th>${T.xName}</th><th>${T.fName}</th></tr></thead><tbody>${rowsH}<tr><td colspan="3" class="mut">&hellip; (${fmtN(T.N - k)} more)</td></tr></tbody></table></div>`;
+        }
+        function renderCounts() {
+            $('countsOut').innerHTML = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols, (i, j) => ({ text: fmtN(T.O[i][j]) }),
+                { rowTotal: i => fmtN(T.rt[i]), footer: { label: 'Total', cell: j => fmtN(T.ct[j]), total: fmtN(T.N) } });
+        }
+        function renderFreq() {
+            const view = $('freqView').value;
+            let html, note;
+            if (view === 'rows') {
+                html = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols,
+                    (i, j) => { const f = T.O[i][j] / T.rt[i], m = T.ct[j] / T.N, d = 100 * (f - m); return { text: `${pct(f)} <span class="mut">(${d >= 0 ? '+' : ''}${d.toFixed(1)})</span>` }; },
+                    { rowTotal: i => '100%', footer: { label: `marginal of ${T.fName}`, cell: j => pct(T.ct[j] / T.N), total: '100%' } });
+                note = `<b>What it means:</b> cell (i, j) = P(${T.fName} = j | ${T.xName} = i) = n<sub>ij</sub>/n<sub>i&middot;</sub>. The number in brackets is the gap, in percentage points, from the marginal distribution (bold last line). Under independence every row would equal the last line and all brackets would be 0. Marginal frequencies of ${T.xName}: ` + T.rows.map((r, i) => `${r} ${pct(T.rt[i] / T.N)}`).join(', ') + '.';
+            } else if (view === 'cols') {
+                html = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols,
+                    (i, j) => { const f = T.O[i][j] / T.ct[j], m = T.rt[i] / T.N, d = 100 * (f - m); return { text: `${pct(f)} <span class="mut">(${d >= 0 ? '+' : ''}${d.toFixed(1)})</span>` }; },
+                    { rowTotal: i => pct(T.rt[i] / T.N), footer: { label: 'total', cell: j => '100%', total: '' } });
+                note = `<b>What it means:</b> cell (i, j) = P(${T.xName} = i | ${T.fName} = j) = n<sub>ij</sub>/n<sub>&middot;j</sub>; every column sums to 100%. The last column (marginal of ${T.xName}) is what each column would show under independence; the bracket is the gap in percentage points.`;
+            } else {
+                html = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols, (i, j) => ({ text: pct(T.O[i][j] / T.N) }),
+                    { rowTotal: i => pct(T.rt[i] / T.N), footer: { label: `marginal of ${T.fName}`, cell: j => pct(T.ct[j] / T.N), total: '100%' } });
+                note = '<b>What it means:</b> cell (i, j) = n<sub>ij</sub>/N. The margins (last row and column) are the marginal frequencies. Under independence each cell would equal (row margin) &times; (column margin).';
+            }
+            $('freqOut').innerHTML = html; $('freqNote').innerHTML = note;
+        }
+        function renderExpected() {
+            $('expOut').innerHTML = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols,
+                (i, j) => ({ text: R.E[i][j].toFixed(2), style: R.E[i][j] < 5 ? 'background:#fef3c7;font-weight:700;' : '' }),
+                { rowTotal: i => fmtN(T.rt[i]), footer: { label: 'Total', cell: j => fmtN(T.ct[j]), total: fmtN(T.N) } });
+            $('contribOut').innerHTML = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols,
+                (i, j) => ({ text: R.C[i][j].toFixed(3) }),
+                { rowTotal: i => R.C[i].reduce((a, b) => a + b, 0).toFixed(3), footer: { label: 'Total = \u03c7\u00b2', cell: j => R.C.reduce((a, row) => a + row[j], 0).toFixed(3), total: R.chi.toFixed(3) } });
+            $('residOut').innerHTML = tableHTML(`${T.xName} \\ ${T.fName}`, T.rows, T.cols,
+                (i, j) => {
+                    const z = R.Z[i][j], a = Math.min(Math.abs(z) / 4, 1) * 0.55;
+                    return { text: (z >= 0 ? '+' : '') + z.toFixed(2), style: `background:${z >= 0 ? `rgba(61,90,254,${a})` : `rgba(244,63,94,${a})`};${Math.abs(z) > 2 ? 'font-weight:800;' : ''}` };
+                });
+        }
+
+        function vLabel(V, minDim) {
+            const s = Math.sqrt(minDim), t = [0.1 / s, 0.3 / s, 0.5 / s];
+            return V < t[0] ? 'negligible' : V < t[1] ? 'small' : V < t[2] ? 'medium' : 'large';
+        }
+        function renderChi() {
+            const a = R.alpha, rej = R.p < a;
+            const vl = vLabel(R.V, Math.min(R.r - 1, R.c - 1));
+            let assum;
+            if (R.minE >= 5) assum = `All the expected counts are at least 5 (minimum ${R.minE.toFixed(2)}): the chi-square approximation is reliable.`;
+            else {
+                const frac = R.below5 / R.cells;
+                assum = `<span class="bad-num">Warning:</span> ${R.below5} of ${R.cells} cells (${(100 * frac).toFixed(0)}%) have an expected count below 5 (minimum ${R.minE.toFixed(2)}). ` + (R.minE >= 1 && frac <= 0.2 ? 'Cochran\'s rule (at least 80% of the cells at 5 or more, none below 1) is still satisfied.' : 'Cochran\'s rule is violated: group categories or rely on the permutation test of Section 7.');
+            }
+            const decision = rej
+                ? `<b class="bad-num">Reject H<sub>0</sub>.</b> p = ${fmtP(R.p)} &lt; &alpha; = ${a} (equivalently &chi;&sup2; = ${R.chi.toFixed(3)} &gt; critical value ${R.crit.toFixed(3)}). If ${T.xName} and ${T.fName} were independent, a table this far from independence (or farther) would occur with probability ${fmtP(R.p)}. The data are <b>not compatible with independence</b>: there is statistical evidence of an <b>association</b> between ${T.xName} and ${T.fName}. Its strength is <b>${vl}</b> (Cram&eacute;r's V = ${R.V.toFixed(3)}).`
+                : `<b class="good-num">Do not reject H<sub>0</sub>.</b> p = ${fmtP(R.p)} &ge; &alpha; = ${a} (equivalently &chi;&sup2; = ${R.chi.toFixed(3)} &le; critical value ${R.crit.toFixed(3)}). A gap from independence this large is quite compatible with chance alone. We <b>cannot conclude that ${T.xName} and ${T.fName} are dependent</b>. This is <i>not</i> a proof of independence (with N = ${fmtN(R.N)} a weak association could go undetected). Cram&eacute;r's V = ${R.V.toFixed(3)} (${vl}).`;
+            $('chiOut').innerHTML =
+                `<div class="dstep"><span class="t">Step 1: statistic</span><span class="formula" style="margin-bottom:0;">&chi;&sup2; = &sum; (O &minus; E)&sup2;/E = ${R.C.flat().map(v => v.toFixed(2)).join(' + ')} = <b>${R.chi.toFixed(4)}</b></span></div>` +
+                `<div class="dstep"><span class="t">Step 2: degrees of freedom</span><span class="formula" style="margin-bottom:0;">df = (r &minus; 1)(c &minus; 1) = (${R.r} &minus; 1)(${R.c} &minus; 1) = <b>${R.df}</b></span></div>` +
+                `<div class="dstep"><span class="t">Step 3: p-value and critical value</span><span class="formula" style="margin-bottom:0;">p = P(&chi;&sup2;<sub>${R.df}</sub> &ge; ${R.chi.toFixed(3)}) = <b>${fmtP(R.p)}</b>        critical value at &alpha; = ${a}: <b>${R.crit.toFixed(4)}</b></span></div>` +
+                `<div class="dstep"><span class="t">Step 4: strength of the association</span><span class="formula" style="margin-bottom:0;">V = &radic;(&chi;&sup2;/(N&middot;min(r &minus; 1, c &minus; 1))) = &radic;(${R.chi.toFixed(3)}/(${fmtN(R.N)}&middot;${Math.min(R.r - 1, R.c - 1)})) = <b>${R.V.toFixed(4)}</b> (${vl})</span></div>` +
+                (R.yates !== null ? `<div class="dstep"><span class="t">2&times;2 table: Yates continuity correction</span><span class="formula" style="margin-bottom:0;">&chi;&sup2;<sub>Yates</sub> = &sum;(|O &minus; E| &minus; 0.5)&sup2;/E = <b>${R.yates.toFixed(4)}</b>, p = <b>${fmtP(R.pY)}</b></span></div>` : '') +
+                `<div class="dstep"><span class="t">Step 5: conditions of validity</span><p style="margin:0;">${assum}</p></div>` +
+                `<div class="callout-academic" style="margin-bottom:0;"><b>Decision (&alpha; = ${a}).</b> ${decision}</div>`;
+        }
+
+        /* ================= rendering: canvases ================= */
+        function renderCondBars() {
+            const st = setupCanvas('canvasCond'); if (!st) return;
+            const { ctx, w, h } = st, pad = { l: 40, r: 12, t: 30, b: 42 };
+            const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b, nb = T.rows.length + 1, slot = pw / nb, bw = Math.min(slot * 0.72, 90);
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 0.5;
+            for (let g = 0; g <= 4; g++) {
+                const y = pad.t + ph * g / 4; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+                ctx.fillStyle = getCssVar('--mut'); ctx.font = '10.5px ' + getCssVar('--font-mono'); ctx.textAlign = 'right'; ctx.fillText((100 - 25 * g) + '%', pad.l - 4, y + 4);
+            }
+            const bars = T.rows.map((rl, i) => ({ label: rl, p: T.O[i].map(o => o / T.rt[i]) })).concat([{ label: 'All', p: T.ct.map(c => c / T.N) }]);
+            bars.forEach((b, k) => {
+                const x = pad.l + k * slot + (slot - bw) / 2; let yBottom = pad.t + ph;
+                b.p.forEach((pj, j) => {
+                    const hh = pj * ph; ctx.fillStyle = PALETTE[j % PALETTE.length]; ctx.globalAlpha = k === bars.length - 1 ? 0.95 : 0.8;
+                    ctx.fillRect(x, yBottom - hh, bw, hh); ctx.globalAlpha = 1;
+                    if (hh > 16) { ctx.fillStyle = '#fff'; ctx.font = '700 10.5px ' + getCssVar('--font-mono'); ctx.textAlign = 'center'; ctx.fillText((pj * 100).toFixed(0) + '%', x + bw / 2, yBottom - hh / 2 + 4); }
+                    yBottom -= hh;
+                });
+                ctx.fillStyle = getCssVar('--fg'); ctx.font = (k === bars.length - 1 ? '700 ' : '') + '11px ' + getCssVar('--font-family'); ctx.textAlign = 'center';
+                const lab = b.label.length > 12 ? b.label.slice(0, 11) + '\u2026' : b.label; ctx.fillText(lab, x + bw / 2, h - pad.b + 16);
+            });
+            // separator before "All"
+            ctx.strokeStyle = getCssVar('--mut'); ctx.setLineDash([3, 3]); ctx.beginPath(); const sx = pad.l + (nb - 1) * slot; ctx.moveTo(sx, pad.t); ctx.lineTo(sx, pad.t + ph); ctx.stroke(); ctx.setLineDash([]);
+            // legend
+            let lx = pad.l; ctx.font = '11px ' + getCssVar('--font-family');
+            T.cols.slice(0, 6).forEach((c, j) => { ctx.fillStyle = PALETTE[j % PALETTE.length]; ctx.fillRect(lx, 8, 11, 11); ctx.fillStyle = getCssVar('--fg'); ctx.textAlign = 'left'; ctx.fillText(`${T.fName}: ${c}`, lx + 15, 18); lx += ctx.measureText(`${T.fName}: ${c}`).width + 32; });
+        }
+
+        function renderMosaic() {
+            const st = setupCanvas('canvasMosaic'); if (!st) return;
+            const { ctx, w, h } = st, pad = { l: 8, r: 8, t: 26, b: 8 }, gapX = 3, gapY = 2;
+            const pw = w - pad.l - pad.r - gapX * (T.rows.length - 1), ph = h - pad.t - pad.b;
+            let x = pad.l;
+            T.rows.forEach((rl, i) => {
+                const cw = pw * T.rt[i] / T.N; let y = pad.t;
+                const usable = ph - gapY * (T.cols.length - 1);
+                T.cols.forEach((cl, j) => {
+                    const hh = usable * T.O[i][j] / T.rt[i], z = R.Z[i][j], a = 0.12 + Math.min(Math.abs(z) / 4, 1) * 0.7;
+                    ctx.fillStyle = z >= 0 ? `rgba(61,90,254,${a})` : `rgba(244,63,94,${a})`; ctx.fillRect(x, y, cw, hh);
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(x, y, cw, hh);
+                    if (cw > 34 && hh > 16) {
+                        ctx.fillStyle = getCssVar('--fg'); ctx.textAlign = 'center'; ctx.font = '700 10.5px ' + getCssVar('--font-mono');
+                        ctx.fillText(fmtN(T.O[i][j]), x + cw / 2, y + hh / 2 + (i === 0 && hh > 30 ? 2 : 4));
+                        if (i === 0 && hh > 30) { ctx.font = '10px ' + getCssVar('--font-family'); ctx.fillStyle = getCssVar('--mut'); ctx.fillText(cl.length > 10 ? cl.slice(0, 9) + '\u2026' : cl, x + cw / 2, y + hh / 2 + 14); }
+                    }
+                    y += hh + gapY;
+                });
+                ctx.fillStyle = getCssVar('--fg'); ctx.font = '11px ' + getCssVar('--font-family'); ctx.textAlign = 'center';
+                if (cw > 24) ctx.fillText(rl.length > Math.max(5, cw / 6.5) ? rl.slice(0, Math.max(3, Math.floor(cw / 6.5) - 1)) + '\u2026' : rl, x + cw / 2, pad.t - 8);
+                x += cw + gapX;
+            });
+        }
+
+        /* chi-square density (+ optional histogram of simulated statistics) */
+        function drawChi(o) {
+            const st = setupCanvas(o.id); if (!st) return;
+            const { ctx, w, h } = st, pad = { l: 46, r: 14, t: 22, b: 32 }, pw = w - pad.l - pad.r, ph = h - pad.t - pad.b, k = o.df;
+            let xmax = Math.max(o.crit * 2.2, k + 5 * Math.sqrt(2 * k) + 4);
+            if (o.hist) xmax = Math.max(xmax, quantile(o.hist, 0.998) * 1.1);
+            let off = false;
+            if (o.obs * 1.1 > xmax) { if (o.obs <= 8 * o.crit) xmax = o.obs * 1.1; else off = true; }
+            const X = x => pad.l + x / xmax * pw;
+            let ymax = 0; const pts = [];
+            for (let s = 1; s <= 300; s++) { const x = xmax * s / 300, y = chi2pdf(x, k); pts.push([x, y]); }
+            const cap = k === 1 ? 0.7 : (k === 2 ? 0.55 : Infinity);
+            pts.forEach(p => { ymax = Math.max(ymax, Math.min(p[1], cap)); });
+            const bins = 30, bwid = xmax / bins; let dens = null;
+            if (o.hist) { const cnt = new Float64Array(bins); for (const v of o.hist) { let b = Math.floor(v / bwid); if (b >= bins) b = bins - 1; cnt[b]++; } dens = Array.from(cnt, c => c / (o.hist.length * bwid)); dens.forEach(d => { ymax = Math.max(ymax, d); }); }
+            ymax *= 1.15;
+            const Y = y => pad.t + (1 - Math.min(y, ymax) / ymax) * ph;
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(w - pad.r, Y(0)); ctx.stroke();
+            if (dens) { ctx.fillStyle = 'rgba(61,90,254,0.40)'; dens.forEach((d, b) => { ctx.fillRect(X(b * bwid) + 0.5, Y(d), X(bwid) - X(0) - 1, Y(0) - Y(d)); }); }
+            if (!off && !o.hist) {
+                ctx.fillStyle = 'rgba(244,63,94,0.30)'; ctx.beginPath(); ctx.moveTo(X(o.obs), Y(0));
+                pts.forEach(p => { if (p[0] >= o.obs) ctx.lineTo(X(p[0]), Y(p[1])); }); ctx.lineTo(X(xmax), Y(0)); ctx.closePath(); ctx.fill();
+            }
+            ctx.save(); ctx.beginPath(); ctx.rect(pad.l, pad.t, pw, ph + 1); ctx.clip();
+            ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 2.2; ctx.beginPath(); pts.forEach((p, i) => { i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }); ctx.stroke(); ctx.restore();
+            // critical value
+            ctx.strokeStyle = '#059669'; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(X(o.crit), pad.t); ctx.lineTo(X(o.crit), Y(0)); ctx.stroke(); ctx.setLineDash([]);
+            // observed
+            if (!off) { ctx.strokeStyle = '#be123c'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(X(o.obs), pad.t); ctx.lineTo(X(o.obs), Y(0)); ctx.stroke(); }
+            else { ctx.fillStyle = '#be123c'; ctx.beginPath(); ctx.moveTo(w - pad.r, Y(0) - 24); ctx.lineTo(w - pad.r - 12, Y(0) - 12); ctx.lineTo(w - pad.r, Y(0) - 0.5); ctx.closePath(); ctx.fill(); }
+            ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'center';
+            [0, 0.5, 1].forEach(f => ctx.fillText((xmax * f).toFixed(xmax > 20 ? 0 : 1), X(xmax * f), h - 10));
+            const items = [{ label: `\u03c7\u00b2 density, df = ${k}`, color: '#d9480f' }, { label: `critical value ${o.crit.toFixed(2)}`, color: '#059669', dash: true }, { label: off ? `observed = ${o.obs.toFixed(1)} (off scale \u2192)` : `observed = ${o.obs.toFixed(2)}`, color: '#be123c' }];
+            if (o.hist) items.unshift({ label: 'simulated statistics', color: 'rgba(61,90,254,0.7)' });
+            drawLegend(ctx, items, w - pad.r - 190, pad.t + 4);
+        }
+        function renderChiPlot() { drawChi({ id: 'canvasChi', df: R.df, obs: R.chi, crit: R.crit }); }
+
+        /* ================= permutation test ================= */
+        let permStats = null, simP = null;
+        function runPerm() {
+            const B = 2000, r = T.rows.length, c = T.cols.length, N = T.N, xi = T.xi, perm = Int32Array.from(T.fi);
+            const E = new Float64Array(r * c); for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) E[i * c + j] = T.rt[i] * T.ct[j] / N;
+            const counts = new Int32Array(r * c), stats = new Float64Array(B); let ge = 0;
+            for (let b = 0; b < B; b++) {
+                shuffleInPlace(perm); counts.fill(0);
+                for (let k = 0; k < N; k++) counts[xi[k] * c + perm[k]]++;
+                let chi = 0; for (let m = 0; m < r * c; m++) { const d = counts[m] - E[m]; chi += d * d / E[m]; }
+                stats[b] = chi; if (chi >= R.chi - 1e-9) ge++;
+            }
+            permStats = { stats, pPerm: (ge + 1) / (B + 1), ge, B };
+            renderPerm();
+        }
+        function renderPerm() {
+            if (!permStats) { drawChi({ id: 'canvasPerm', df: R.df, obs: R.chi, crit: R.crit, hist: [0] }); return; }
+            drawChi({ id: 'canvasPerm', df: R.df, obs: R.chi, crit: R.crit, hist: permStats.stats });
+            $('permReadout').textContent = `${permStats.B} shuffles: ${permStats.ge} gave a statistic at least as large as the observed one (${R.chi.toFixed(2)}). Permutation p-value = (1 + ${permStats.ge}) / (${permStats.B} + 1) = ${fmtP(permStats.pPerm)}; theoretical (chi-square) p-value = ${fmtP(R.p)}. Mean of the shuffled statistics = ${(Array.from(permStats.stats).reduce((a, b) => a + b, 0) / permStats.B).toFixed(3)} (theory: df = ${R.df}).`;
+        }
+
+        /* ================= false-positive simulation ================= */
+        function runSim() {
+            const S = 1000, r = T.rows.length, c = T.cols.length, N = T.N, df = R.df, a = R.alpha;
+            const rc = []; let acc = 0; T.rt.forEach(v => { acc += v / N; rc.push(acc); });
+            const cc = []; acc = 0; T.ct.forEach(v => { acc += v / N; cc.push(acc); });
+            const ps = new Float64Array(S); let rej = 0;
+            for (let s = 0; s < S; s++) {
+                const counts = new Int32Array(r * c), rowT = new Int32Array(r), colT = new Int32Array(c);
+                for (let k = 0; k < N; k++) { const i = drawCat(rc), j = drawCat(cc); counts[i * c + j]++; rowT[i]++; colT[j]++; }
+                let chi = 0; for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) { const e = rowT[i] * colT[j] / N; if (e > 0) { const d = counts[i * c + j] - e; chi += d * d / e; } }
+                ps[s] = chi2sf(chi, df); if (ps[s] < a) rej++;
+            }
+            simP = { ps, rej, S }; renderSim();
+        }
+        function renderSim() {
+            const st = setupCanvas('canvasP'); if (!st) return; const { ctx, w, h } = st;
+            const pad = { l: 46, r: 14, t: 22, b: 34 }, pw = w - pad.l - pad.r, ph = h - pad.t - pad.b, bins = 20;
+            const cnt = new Float64Array(bins); if (simP) for (const p of simP.ps) cnt[Math.min(bins - 1, Math.floor(p * bins))]++;
+            const expc = simP ? simP.S / bins : 50, ymax = Math.max(...cnt, expc) * 1.2 || 1;
+            const X = b => pad.l + b / bins * pw, Y = v => pad.t + (1 - v / ymax) * ph;
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(w - pad.r, Y(0)); ctx.stroke();
+            for (let b = 0; b < bins; b++) { ctx.fillStyle = ((b + 1) / bins <= R.alpha + 1e-9) ? 'rgba(244,63,94,0.65)' : 'rgba(61,90,254,0.45)'; ctx.fillRect(X(b) + 1, Y(cnt[b]), X(1) - X(0) - 2, Y(0) - Y(cnt[b])); }
+            ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(pad.l, Y(expc)); ctx.lineTo(w - pad.r, Y(expc)); ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'center';
+            [0, 0.25, 0.5, 0.75, 1].forEach(f => ctx.fillText(f.toFixed(2), X(f * bins), h - 12));
+            ctx.textAlign = 'right'; ctx.fillText(fmtAxis(ymax / 1.2, 1e-9), pad.l - 4, pad.t + 10); ctx.fillText('0', pad.l - 4, Y(0) + 4);
+            drawLegend(ctx, [{ label: 'rejected (p < \u03b1)', color: 'rgba(244,63,94,0.8)' }, { label: 'expected if p is uniform', color: '#d9480f', dash: true }], pad.l + 8, pad.t + 4);
+            $('simReadout').textContent = simP ? `${simP.S} independent datasets with the margins and N of the current data: ${simP.rej} rejected H0 at \u03b1 = ${R.alpha} (${(100 * simP.rej / simP.S).toFixed(1)}% observed; expected ${(100 * R.alpha).toFixed(0)}%). The histogram of the p-values is approximately flat. Horizontal axis: p-value; bins of width 0.05 (rose bins: p below \u03b1).` : 'Press the button to run the simulation.';
+        }
+
+        /* ================= sample size scaling ================= */
+        function renderScale() {
+            const k = +$('scaleK').value; $('scaleKDisp').textContent = k;
+            const ks = Array.from({ length: 60 }, (_, i) => i + 1);
+            const Ns = ks.map(v => v * T.N), pv = ks.map(v => Math.max(chi2sf(v * R.chi, R.df), 1e-300));
+            const st = setupCanvas('canvasScale'); if (!st) return; const { ctx, w, h } = st;
+            const pad = { l: 62, r: 16, t: 22, b: 32 }, pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+            const lg = pv.map(v => Math.log10(v)); let lo = Math.min(...lg, Math.log10(R.alpha)), hi = Math.max(...lg, 0);
+            lo = Math.floor(lo) - 0.2; hi = hi + 0.2;
+            const X = n => pad.l + (n - Ns[0]) / (Ns[Ns.length - 1] - Ns[0]) * pw, Y = l => pad.t + (1 - (l - lo) / (hi - lo)) * ph;
+            ctx.strokeStyle = getCssVar('--ln'); ctx.lineWidth = 0.5;
+            for (let g = 0; g <= 4; g++) { const y = pad.t + ph * g / 4; ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke(); const l = hi - (hi - lo) * g / 4; ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'right'; ctx.fillText('1e' + l.toFixed(0), pad.l - 4, y + 4); }
+            ctx.save(); ctx.beginPath(); ctx.rect(pad.l, pad.t, pw, ph); ctx.clip();
+            ctx.strokeStyle = '#d9480f'; ctx.lineWidth = 1.8; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(pad.l, Y(Math.log10(R.alpha))); ctx.lineTo(w - pad.r, Y(Math.log10(R.alpha))); ctx.stroke(); ctx.setLineDash([]);
+            ctx.strokeStyle = getCssVar('--ac'); ctx.lineWidth = 2.2; ctx.beginPath(); ks.forEach((v, i) => { i ? ctx.lineTo(X(Ns[i]), Y(lg[i])) : ctx.moveTo(X(Ns[i]), Y(lg[i])); }); ctx.stroke();
+            ctx.restore();
+            const xk = X(k * T.N), yk = Y(Math.log10(Math.max(chi2sf(k * R.chi, R.df), 1e-300)));
+            ctx.fillStyle = '#be123c'; ctx.beginPath(); ctx.arc(xk, yk, 5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = getCssVar('--mut'); ctx.font = '11px ' + getCssVar('--font-mono'); ctx.textAlign = 'center';
+            [Ns[0], Ns[19], Ns[39], Ns[59]].forEach(n => ctx.fillText(fmtN(Math.round(n)), X(n), h - 10));
+            drawLegend(ctx, [{ label: 'p-value', color: getCssVar('--ac') }, { label: `\u03b1 = ${R.alpha}`, color: '#d9480f', dash: true }], w - pad.r - 130, pad.t + 4);
+            const chiK = k * R.chi, pk = chi2sf(chiK, R.df);
+            $('scaleReadout').textContent = `k = ${k}: N = ${fmtN(k * T.N)}, \u03c7\u00b2 = ${chiK.toFixed(3)} (= ${k} \u00d7 ${R.chi.toFixed(3)}), p-value = ${fmtP(pk)}, Cramer's V = ${R.V.toFixed(4)} (unchanged). ${pk < R.alpha ? 'Significant at this sample size.' : 'Not significant at this sample size.'}`;
+        }
+
+        /* ================= Simpson's paradox ================= */
+        function renderSimpson() {
+            const data = [
+                { s: 'Small stones', A: [81, 6], B: [234, 36] },
+                { s: 'Large stones', A: [192, 71], B: [55, 25] }
+            ];
+            data.push({ s: 'All stones (aggregated)', A: [data[0].A[0] + data[1].A[0], data[0].A[1] + data[1].A[1]], B: [data[0].B[0] + data[1].B[0], data[0].B[1] + data[1].B[1]] });
+            let rows = '';
+            data.forEach((d, idx) => {
+                const rA = d.A[0] / (d.A[0] + d.A[1]), rB = d.B[0] / (d.B[0] + d.B[1]), res = analyzeCounts([d.A, d.B]);
+                const agg = idx === 2;
+                rows += `<tr style="${agg ? 'background:rgba(244,63,94,0.06);' : ''}"><td rowspan="2"><b>${d.s}</b></td><td>Treatment A</td><td class="num">${d.A[0]}</td><td class="num">${d.A[1]}</td><td class="num">${d.A[0] + d.A[1]}</td><td class="num"><b>${pct(rA)}</b></td><td class="num" rowspan="2">${res.chi.toFixed(2)}<br>p = ${fmtP(res.p)}</td><td rowspan="2">${rA > rB ? 'A better' : 'B better'}</td></tr>` +
+                    `<tr style="${agg ? 'background:rgba(244,63,94,0.06);' : ''}"><td>Treatment B</td><td class="num">${d.B[0]}</td><td class="num">${d.B[1]}</td><td class="num">${d.B[0] + d.B[1]}</td><td class="num"><b>${pct(rB)}</b></td></tr>`;
+            });
+            $('simpsonOut').innerHTML = `<div class="wrap"><table><thead><tr><th>Stratum</th><th>Treatment</th><th>Success</th><th>Failure</th><th>Total</th><th>Success rate</th><th>&chi;&sup2; (df = 1)</th><th>Direction</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        }
+
+        /* ================= conclusions ================= */
+        function renderConc() {
+            const a = R.alpha, rej = R.p < a, vl = vLabel(R.V, Math.min(R.r - 1, R.c - 1));
+            $('liveConc').innerHTML = `<b>What this dataset shows</b> (${T.xName} \u00d7 ${T.fName}, N = ${fmtN(R.N)}): \u03c7\u00b2 = <b>${R.chi.toFixed(2)}</b> with ${R.df} degrees of freedom, p-value = <b>${fmtP(R.p)}</b>, Cram&eacute;r's V = <b>${R.V.toFixed(3)}</b> (${vl}). At \u03b1 = ${a} we ` + (rej ? `<b>reject independence</b>: the two variables are statistically <b>associated</b>.` : `<b>do not reject independence</b>: the data are compatible with no association (which is not a proof of independence).`) + ` In either case, nothing here says that one variable <i>causes</i> the other.`;
+        }
+
+        function renderAll() {
+            renderRaw(); renderCounts(); renderFreq(); renderExpected(); renderChi(); renderCondBars(); renderMosaic();
+            renderChiPlot(); renderPerm(); renderSim(); renderScale(); renderSimpson(); renderConc();
+        }
+
+        /* ================= events ================= */
+        $('dataSel').addEventListener('change', loadData);
+        $('alphaSel').addEventListener('change', () => { R = computeResults(T, +$('alphaSel').value); simP = null; renderAll(); });
+        $('nSlider').addEventListener('input', () => { $('nDisp').textContent = $('nSlider').value; });
+        $('nSlider').addEventListener('change', loadData);
+        $('btnRegen').addEventListener('click', loadData);
+        $('btnAnalyze').addEventListener('click', loadData);
+        $('freqView').addEventListener('change', renderFreq);
+        $('btnPerm').addEventListener('click', runPerm);
+        $('btnSim').addEventListener('click', runSim);
+        $('scaleK').addEventListener('input', renderScale);
+
+        window.addEventListener('resize', () => { if (T) { renderCondBars(); renderMosaic(); renderChiPlot(); renderPerm(); renderSim(); renderScale(); } });
+
+        /* ================= init ================= */
+        $('customText').value = defaultCustomText();
+        loadData();
+    </script>
+
+</body>
+
+</html>
